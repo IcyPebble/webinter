@@ -128,6 +128,7 @@ socket.on("update_attributes", (id, attributes) => {
         switch (name) {
             case "text":
                 element.innerText = attributes[name];
+                break;
 
             case "label":
                 if (element.type === "button") {
