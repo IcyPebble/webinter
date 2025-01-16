@@ -1,5 +1,5 @@
-from html_builder import HTMLBuilder
-from server import Server
+from .html_builder import HTMLBuilder
+from .server import Server
 from PIL import Image
 from io import BytesIO
 import base64
