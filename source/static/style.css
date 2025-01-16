@@ -1,0 +1,184 @@
+body {
+    margin: 0px;
+    padding: 0px;
+    width: 100vw;
+    height: 100vh;
+}
+
+#app {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    overflow: scroll;
+
+    --font-size: 1.2rem;
+    --max-content-width: 70vw;
+    --content-padding: 2rem;
+    --element-margin: 0.5rem;
+    --label-margin: 0.8em;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: var(--font-size);
+}
+
+#content {
+    min-height: 100vh;
+    max-width: var(--max-content-width);
+    padding: var(--content-padding) 0px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    flex: none;
+}
+
+#content>* {
+    flex-shrink: 0;
+    flex-grow: 0;
+    box-sizing: border-box;
+    margin: var(--element-margin) 0px;
+}
+
+.group {
+    position: relative;
+    margin: 0px !important;
+}
+
+.element {
+    width: fit-content;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.group .element {
+    margin: 0px;
+    padding: var(--element-margin) var(--label-margin) var(--element-margin) 0px;
+    position: absolute;
+    box-sizing: border-box;
+}
+
+.element * {
+    margin: 0px;
+    padding: 0px;
+    box-sizing: border-box;
+}
+
+/* Media */
+
+.element>:is(h1, h2, h3, h4, h5, h6),
+.element>p {
+    overflow-wrap: break-word;
+    width: fit-content;
+    display: inline-flex;
+    align-items: center;
+    min-height: calc(2.2 * var(--font-size));
+}
+
+.element>video,
+.element>img {
+    width: calc(0.6 * var(--max-content-width) + 2 * var(--label-margin));
+    height: calc(16 * var(--font-size));
+    object-fit: contain;
+    background-color: rgb(245, 245, 245);
+}
+
+.element>audio {
+    height: calc(2.2 * var(--font-size));
+    width: calc(0.6 * var(--max-content-width) + 2 * var(--label-margin));
+}
+
+/* Input */
+
+.element:has(:is(input, select))>* {
+    height: calc(2.2 * var(--font-size));
+}
+
+.element:has(:is(input, select, textarea))>label {
+    font-size: inherit;
+    font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    margin-right: var(--label-margin);
+    width: calc(0.2 * var(--max-content-width));
+    overflow: scroll;
+    word-break: keep-all;
+    white-space: nowrap;
+}
+
+.element:has(textarea)>label {
+    margin-right: 0px;
+    margin-bottom: 1em;
+}
+
+.element:has(textarea) {
+    flex-direction: column;
+    align-items: start;
+}
+
+.element>textarea {
+    width: calc(0.6 * var(--max-content-width) + 2 * var(--label-margin));
+    height: calc(10 * var(--font-size));
+    font-size: inherit;
+    font-family: inherit;
+    padding: 0px 0.5em;
+    border: 1px solid black;
+    border-radius: 4px;
+    overflow: scroll;
+    resize: none;
+}
+
+.element>input[type=text] {
+    width: calc(0.6 * var(--max-content-width) + 2 * var(--label-margin));
+    font-size: inherit;
+    font-family: inherit;
+    padding: 0px 0.5em;
+    border: 1px solid black;
+    border-radius: 4px;
+}
+
+.element>input[type=file] {
+    width: calc(0.6 * var(--max-content-width) + 2 * var(--label-margin));
+    font-size: inherit;
+    font-family: inherit;
+    display: flex;
+    padding-top: calc(0.4 * var(--font-size));
+}
+
+.element>input[type=range] {
+    width: calc(0.6 * var(--max-content-width) + 2 * var(--label-margin));
+}
+
+.element>input[type=color],
+.element>input[type=number],
+.element>input[type=button] {
+    width: calc(0.2 * var(--max-content-width));
+    font-size: inherit;
+    font-family: inherit;
+    padding: 0px 0.5em;
+    overflow: scroll;
+    word-break: keep-all;
+    white-space: nowrap;
+    border: 1px solid black;
+    border-radius: 4px;
+}
+
+.element>select {
+    width: calc(0.3 * var(--max-content-width) + 0.5 * var(--label-margin));
+    font-size: inherit;
+    font-family: inherit;
+    padding: 0px 0.5em;
+    border: 1px solid black;
+    border-radius: 4px;
+}
+
+.element>input[type=checkbox] {
+    width: calc(1.2 * var(--font-size));
+    height: calc(1.2 * var(--font-size));
+    margin: 0px var(--element-margin);
+}
+
+.element:has(input[type=checkbox]):has(:not(label)) {
+    height: calc(2.2 * var(--font-size));
+}
