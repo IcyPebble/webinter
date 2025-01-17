@@ -4,13 +4,17 @@ The aim of “WebInter” is to provide (existing) Python code with simple and g
 <span style="color:grey; font-size: x-small"><i>This is just a “small” project and thus will be maintained/updated irregularly</i></span>
 
 ### Table of contents
-1. [A basic application](#a-basic-application)
-2. [The core of every application](#the-core-of-every-application)
-3. [Sync or async?](#sync-or-async)
-4. [How to use elements](#how-to-use-elements)
-5. [Handling events](#handling-events)
-6. [Modifing the arrangement](#modifing-the-arrangement)
-7. [API](#api)
+1. [Installation](#installation)
+2. [A basic application](#a-basic-application)
+3. [The core of every application](#the-core-of-every-application)
+4. [Sync or async?](#sync-or-async)
+5. [How to use elements](#how-to-use-elements)
+6. [Handling events](#handling-events)
+7. [Modifing the arrangement](#modifing-the-arrangement)
+8. [API](#api)
+
+# Installation
+Currently, in order to use WebInter, you have to copy the folder “webinter” into the same folder where your project file is located.
 
 ## A basic application
 A simple webinter program may look like this:
