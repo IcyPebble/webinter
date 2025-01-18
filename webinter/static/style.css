@@ -91,7 +91,7 @@ body {
 
 /* Input */
 
-.element:has(:is(input, select))>* {
+.element:has(:is(input, select, textarea))>* {
     height: calc(2.2 * var(--font-size));
 }
 
