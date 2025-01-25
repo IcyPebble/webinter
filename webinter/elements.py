@@ -528,6 +528,8 @@ class WebI:
             return
 
         # call type specific handler(s) of element
+        if value is None:
+            value = await self.elements[id].get(_async=True)
         for handler in self.handlers[type][id].values():
             await handler(self.elements[id], value)
     
