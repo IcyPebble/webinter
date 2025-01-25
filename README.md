@@ -82,6 +82,7 @@ An overview of the default values of the _async parameter for each function can 
 | WebI.group                   | False      |
 | WebI.order                   | True       |
 | WebI.alert                   | True       |
+| WebI.download                | True       |
 | WebI.shutdown                | True       |
 | Element.get                  | True       |
 | Element.add                  | False      |
@@ -92,6 +93,9 @@ An overview of the default values of the _async parameter for each function can 
 | Element.update_attr          | True       |
 | Element.remove_attr          | True       |
 | MediaElement.change_src      | True       |
+| DrawingBoard.toggle_eraser   | True       |
+| DrawingBoard.clear           | True       |
+| DrawingBoard.undo            | True       |
 | Group.add_members            | True       |
 | Group.remove_members         | True       |
 | Group.disband                | True       |
@@ -127,7 +131,7 @@ An input element can be created in the following way:
 ```python
 input_element = webi.input(type: str, **attr)
 ```
-The **type** argument is similar to the HTML declaration, therefore<br>**"number", "text", "color", "file", "checkbox", "range", "button", "select" and "textarea"**<br>are permitted so far.
+The **type** argument is similar to the HTML declaration, therefore<br>**"number", "text", "color", "file", "checkbox", "range", "button", "select" and "textarea"**<br>are permitted so far. In fact, theres is another (custom) type **"draw"**, which creates a [drawing board](#drawing-boards).
 
 All other **attributes** apply and behave in the same way **as those of the respective HTML element**. See [here](https://developer.mozilla.org/en-US/docs/Web/HTML/Element#forms) for more information. However, there are also exceptions, which are listed in the following table:
 
@@ -149,6 +153,37 @@ Inputs with type=file will return a list containing each selected file as a dict
    "type": MIME type ("image", "video", etc.),
    "format": MIME subtype ("png", "javascript", etc.)
 }
+```
+
+### Drawing boards
+Drawing boards are a special type of input element:
+```python
+drawing_board = webi.input("draw", **attr[
+   width: int = 400,
+   height: int = 300,
+   line_width: int = 4,
+   color: str = "black",
+   bg_color: str = "white",
+   erase
+])
+```
+**width** and **height** specify the dimension of the image (in pixels, as does **line_width**).<br>
+The color of the line or the background can be configured with a valid CSS color value for **color** and **bg_color**.<br>
+The **erase** attribute acts like a Boolean HTML attribute.
+
+To empty the board, you can call its ```clear()``` method. Or you can undo your last stroke with ```undo()```. However, this does not undo changes made to the attributes.<br>
+To easily switch the eraser on and off, ```toggle_eraser(erase: (bool | NoneType) = None)``` may be used instead of remove_attr and update_attr (*erase = None* will inverse the current setting).
+
+The ```get(res: (float | int) = 1)``` method returns the drawn image (width\*res x height\*res):
+```
+[{
+   "file": BytesIO buffer,
+   "name": "drawing.png",
+   "base": "drawing",
+   "extension": "png",
+   "type": "image",
+   "format": "png"
+}]
 ```
 
 ### Text
@@ -232,7 +267,7 @@ await Element.on(event, _async=True)(handler)
 
 The “handler” function, as in the examples above, **must** always be async and take two arguments.<br>
 The first argument is the element on which the event was triggered.<br>
-The (new) value of the element or None is given to the function as the second argument. For the “click” event of images, a coordinate is returned (x/top, y/left).
+The (new) value of the element or None is given to the function as the second argument. For the “click” event of images, a coordinate is returned [x (left), y (top)].
 
 To remove a handler function, the ```remove_event_handler``` function can be called:
 ```python
@@ -292,6 +327,16 @@ The position can be either -1 or 1.<br>
 A position of -1 places the element **before** the anchor element,<br>
 while a position of 1 places the element **after** the anchor element.<br>
 
+
+## Additional functions
+You can display a pop-up with ```webi.alert(msg: str)```.
+
+---
+A download window can be opened in the following way:
+```python
+webi.download(buffer: IOBuffer, filename: str)
+```
+Here, **buffer** contains the (binary) file data and **filename** defines the name of the file including its extension.
 
 ## API
 ### WebI
@@ -431,6 +476,38 @@ MediaElement(webi: WebI, element_type: str, attr: dict, html_tag: str, html_inpu
 *__MediaElement__ inherits methods from its parent, __Element__*
 
  > **change_src(src, format, _async)**: Changes the source of the element
+</details>
+
+### DrawingBoard(Element)
+```python
+DrawingBoard(webi: WebI, element_type: str, attr: dict, html_tag: str, html_input_type: (str | None))
+```
+<details>
+<summary>Parameters</summary>
+
+*__DrawingBoard__ inherits parameters from its parent, __Element__*
+
+</details>
+
+<details>
+<summary>Attributes</summary>
+
+*__DrawingBoard__ inherits attributes from its parent, __Element__*
+
+</details>
+
+<details>
+<summary>Methods</summary>
+
+*__DrawingBoard__ inherits methods from its parent, __Element__*
+
+ > **toggle_eraser(erase, _async)**: Switches the eraser on or off depending on erase. erase = None will inverse the current setting.
+
+ > **clear(_async)**: Clears the board.
+
+ > **undo(_async)**: Removes the last stroke.
+
+ > **get(res, _async)**: Returns the drawn image, scaled by res. 
 </details>
 
 ### Group
