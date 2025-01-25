@@ -66,6 +66,7 @@ class DrawingBoard extends HTMLElement {
             this.current_line.setAttribute("stroke-width", this.line_width);
             this.current_line.setAttribute("stroke-linecap", "round");
             this.current_line.setAttribute("fill", "none");
+            if (this.erase) { this.current_line.classList.add("eraser") }
 
             this.svg.appendChild(this.current_line);
         });
@@ -140,6 +141,9 @@ class DrawingBoard extends HTMLElement {
             case "bg_color":
                 this.bg_color = new_value || this.default_bg_color;
                 this.background.setAttribute("fill", this.bg_color);
+                for (let eraser of this.svg.getElementsByClassName("eraser")) {
+                    eraser.setAttribute("stroke", this.bg_color);
+                }
                 break;
 
             case "erase":
