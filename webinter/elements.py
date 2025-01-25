@@ -2,7 +2,7 @@ from .html_builder import HTMLBuilder
 from .server import Server
 from PIL import Image
 from io import BytesIO
-import base64
+import uuid
 import numpy as np
 from scipy.io import wavfile
 import asyncio
@@ -226,6 +226,65 @@ class MediaElement(Element):
             return async_()
         asyncio.run(async_())
 
+class DrawingBoard(Element):
+    def __init__(self, webi, element_type, attr, html_tag, html_input_type):
+        super().__init__(webi, element_type, attr, html_tag, html_input_type)
+        self.allowed_events.update({
+            # ...
+        })
+    
+    def toggle_eraser(self, erase=None, _async=True):
+        async def async_():
+            e = erase if erase is not None else not self.attr.get("erase", False)
+            
+            if e:
+                await self.update_attr({"erase": True}, True)
+            else:
+                await self.remove_attr(["erase"], True)
+        
+        if _async:
+            return async_()
+        asyncio.run(async_())
+    
+    def clear(self, _async=True):
+        async def async_():
+            await self.webi.server._emit("clear_drawing_board", id(self))
+        
+        if _async:
+            return async_()
+        asyncio.run(async_())
+    
+    # Only strokes
+    def undo(self, _async=True):
+        async def async_():
+            await self.webi.server._emit("undo_drawing_board", id(self))
+        
+        if _async:
+            return async_()
+        asyncio.run(async_())
+    
+    def __call__(self, res=1, _async=True):
+        return self.get(res, _async)
+
+    def get(self, res=1, _async=True):
+        async def async_():
+            if not self.webi.server.connected:
+                return None
+            
+            await self.webi.server._emit("get_drawing_board", id(self), res)
+
+            await self._value_response.wait()
+            value = self._value_response.value
+
+            self._value_response.clear()
+            self._value_response.value = None
+
+            return value
+        
+        if _async:
+            return async_()
+        return asyncio.run(async_())
+
 class Group:
     def __init__(self, webi, sort):
         self.webi = webi
@@ -337,12 +396,12 @@ class WebI:
 
     # constructor
     def input(self, type, **attr):
-        core = Element(
-            webi = self,
-            element_type = f"input-{type}",
-            attr = attr,
-            html_tag = "input",
-            html_input_type = type
+        core = (DrawingBoard if type == "draw" else Element)(
+                webi = self,
+                element_type = f"input-{type}",
+                attr = attr,
+                html_tag = ("drawing-board" if type == "draw" else "input"),
+                html_input_type = type
         )
         
         return core
@@ -460,6 +519,19 @@ class WebI:
             return async_()
         asyncio.run(async_())
     
+    def download(self, buffer, filename, _async=True):
+        async def async_():
+            file = {"src": buffer, "mimetype":"application/octet-stream"}
+            file_id = uuid.uuid4().int
+            self.server.file_storage[file_id] = file
+            await self.server._emit(
+                "download", str(file_id), filename
+            )
+        
+        if _async:
+            return async_()
+        asyncio.run(async_())
+    
     # generic event handler
     async def _event(self, type, id, value):
         if type == "value_response": # user called element.get()
@@ -469,6 +541,8 @@ class WebI:
             return
 
         # call type specific handler(s) of element
+        if value is None:
+            value = await self.elements[id].get(_async=True)
         for handler in self.handlers[type][id].values():
             await handler(self.elements[id], value)
     

@@ -59,23 +59,23 @@ socket.on("remove_element", (id) => {
 
 socket.on("register_event", (id, event) => {
     document.getElementById(id)[`on${event}`] = function (e) {
-        let value;
-        switch (event) {
-            case "input":
-            case "change":
-                value = this.value;
-                break;
+        let value = null; // triggers element.get() if null
+        let el = e.target;
+        if (e.type == "click" && el.tagName == "IMG") {
+            // Calculate the offset created by object-fit: contain
+            contain_scaling = Math.min(
+                el.width / el.naturalWidth, el.height / el.naturalHeight
+            );
+            contain_width = el.naturalWidth * contain_scaling;
+            contain_height = el.naturalHeight * contain_scaling;
+            contain_offset_x = Math.floor((el.width - contain_width) / 2);
+            contain_offset_y = Math.floor((el.height - contain_height) / 2);
 
-            case "click":
-                if (this.tagName == "IMG") { value = (e.offsetX, e.offsetY) }
-                else { value = null }
-                break;
-
-            case "play":
-            case "pause":
-            case "ended":
-                value = null;
-                break;
+            // value = null if point lies outside of the image
+            value = ((e.offsetX - contain_offset_x >= 0 && e.offsetX - contain_offset_x <= el.width) && (e.offsetY - contain_offset_y >= 0 && e.offsetY - contain_offset_y <= el.height)) ? [
+                Math.floor((e.offsetX - contain_offset_x) / contain_scaling),
+                Math.floor((e.offsetY - contain_offset_y) / contain_scaling)
+            ] : null;
         }
 
         socket.emit("element_event", event, id, value);
@@ -86,12 +86,12 @@ socket.on("remove_event", (id, event) => {
     document.getElementById(id)[`on${event}`] = (e) => { };
 })
 
-function on_get_files(file_input) {
+function on_get_files(id, files) {
     let data = new FormData();
-    data.append("id", file_input.id);
+    data.append("id", id);
 
-    for (let file of file_input.files) {
-        data.append(file_input.id, file, file.name);
+    for (let file of files) {
+        data.append(id, file, file.name);
     }
 
     fetch("/file_upload", {
@@ -100,15 +100,38 @@ function on_get_files(file_input) {
     });
 }
 
+function element_value(element) {
+    let value = null;
+    switch (element.type) {
+        case "checkbox":
+            value = element.checked;
+            break;
+
+        case "button":
+            break;
+
+        default:
+            value = element.value || null;
+            break;
+    }
+
+    return value;
+}
+
 socket.on("get_value", (id) => {
     let element = document.getElementById(id);
     if (element.type == "file") {
-        on_get_files(element);
+        on_get_files(id, element.files);
     } else {
         socket.emit(
-            "element_event", "value_response", id, element.value
+            "element_event", "value_response", id, element_value(element)
         );
     }
+})
+
+socket.on("get_drawing_board", (id, res) => {
+    let element = document.getElementById(id);
+    element.get_drawing(res).then((file) => on_get_files(id, [file]));
 })
 
 socket.on("change_src", (id, typestr) => {
@@ -225,6 +248,16 @@ socket.on("change_visibility", (id, mode) => {
     onmodification();
 });
 
+socket.on("clear_drawing_board", (id) => {
+    let element = document.getElementById(id);
+    element.clear();
+});
+
+socket.on("undo_drawing_board", (id) => {
+    let element = document.getElementById(id);
+    element.undo_last_stroke();
+});
+
 socket.on("order", (ordered_ids) => {
     for (let i = 0; i < ordered_ids.length - 1; i++) {
         let first = document.getElementById(ordered_ids[i]);
@@ -295,6 +328,25 @@ socket.on("disband_group", (id) => {
 });
 
 socket.on("alert", (msg) => { alert(msg) });
+
+socket.on("download", (id, filename) => {
+    fetch('/get_file?' + new URLSearchParams({ "id": id }).toString(), {
+        method: "GET"
+    }).then(res => res.blob()).then(data => {
+        let blob = new Blob([data], { type: "application/octet-stream" });
+        let url = URL.createObjectURL(blob);
+
+        let a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.style.display = "none";
+
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    });
+})
 
 socket.on("shutdown", () => {
     socket.disconnect();

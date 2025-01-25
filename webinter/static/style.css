@@ -91,11 +91,11 @@ body {
 
 /* Input */
 
-.element:has(:is(input, select, textarea))>* {
+.element:has(:is(input, select, textarea, drawing-board))>* {
     height: calc(2.2 * var(--font-size));
 }
 
-.element:has(:is(input, select, textarea))>label {
+.element:has(:is(input, select, textarea, drawing-board))>label {
     font-size: inherit;
     font-family: inherit;
     display: inline-flex;
@@ -107,12 +107,12 @@ body {
     white-space: nowrap;
 }
 
-.element:has(textarea, input[type=text], input[type=file], input[type=range])>label {
+.element:has(textarea, input[type=text], input[type=file], input[type=range], drawing-board)>label {
     margin-right: 0px;
     margin-bottom: var(--element-margin);
 }
 
-.element:has(textarea, input[type=text], input[type=file], input[type=range]) {
+.element:has(textarea, input[type=text], input[type=file], input[type=range], drawing-board) {
     flex-direction: column;
     align-items: start;
 }
@@ -127,6 +127,13 @@ body {
     border-radius: 4px;
     overflow: scroll;
     resize: none;
+}
+
+.element>drawing-board {
+    width: calc(0.6 * var(--max-content-width) + 2 * var(--label-margin));
+    height: calc(20 * var(--font-size));
+    border: 1px solid black;
+    border-radius: 4px;
 }
 
 .element>input[type=text] {
@@ -175,10 +182,5 @@ body {
 
 .element>input[type=checkbox] {
     width: calc(1.2 * var(--font-size));
-    height: calc(1.2 * var(--font-size));
     margin: 0px var(--element-margin);
-}
-
-.element:has(input[type=checkbox]):has(:not(label)) {
-    height: calc(2.2 * var(--font-size));
 }
