@@ -182,10 +182,5 @@ body {
 
 .element>input[type=checkbox] {
     width: calc(1.2 * var(--font-size));
-    height: calc(1.2 * var(--font-size));
     margin: 0px var(--element-margin);
-}
-
-.element:has(input[type=checkbox]):has(:not(label)) {
-    height: calc(2.2 * var(--font-size));
 }
