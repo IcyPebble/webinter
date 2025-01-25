@@ -2,7 +2,7 @@ from .html_builder import HTMLBuilder
 from .server import Server
 from PIL import Image
 from io import BytesIO
-import base64
+import uuid
 import numpy as np
 from scipy.io import wavfile
 import asyncio
@@ -514,6 +514,19 @@ class WebI:
                 ids.append(id(element))
             
             await self.server._emit("order", ids)
+        
+        if _async:
+            return async_()
+        asyncio.run(async_())
+    
+    def download(self, buffer, filename, _async=True):
+        async def async_():
+            file = {"src": buffer, "mimetype":"application/octet-stream"}
+            file_id = uuid.uuid4().int
+            self.server.file_storage[file_id] = file
+            await self.server._emit(
+                "download", str(file_id), filename
+            )
         
         if _async:
             return async_()

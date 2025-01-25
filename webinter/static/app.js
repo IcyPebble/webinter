@@ -329,6 +329,25 @@ socket.on("disband_group", (id) => {
 
 socket.on("alert", (msg) => { alert(msg) });
 
+socket.on("download", (id, filename) => {
+    fetch('/get_file?' + new URLSearchParams({ "id": id }).toString(), {
+        method: "GET"
+    }).then(res => res.blob()).then(data => {
+        let blob = new Blob([data], { type: "application/octet-stream" });
+        let url = URL.createObjectURL(blob);
+
+        let a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.style.display = "none";
+
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    });
+})
+
 socket.on("shutdown", () => {
     socket.disconnect();
 
