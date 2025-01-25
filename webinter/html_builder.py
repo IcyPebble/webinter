@@ -59,6 +59,19 @@ class HTMLBuilder:
             a.textarea(id=id, **attr)
 
         return str(a)
+    
+    @staticmethod
+    def _drawing_board(id, **attr):
+        del attr["type"]
+
+        a = Airium()
+        with a.div():
+            label = attr.pop("label", None)
+            if label is not None: a.label(for_=id, _t=label)
+
+            getattr(a, "drawing-board")(id=id, **attr)
+        
+        return str(a)
 
     @classmethod
     def create_html_element(this, tag_name, id, **attr):
@@ -75,6 +88,9 @@ class HTMLBuilder:
                     
                     case _:
                         raise ValueError(f"\'{attr['type']}\' is not a supported input type")
+            
+            case "drawing-board":
+                return this._drawing_board(id, **attr)
 
             case "img":
                 a = Airium()
