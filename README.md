@@ -11,7 +11,8 @@ The aim of “WebInter” is to provide (existing) Python code with simple and g
 5. [How to use elements](#how-to-use-elements)
 6. [Handling events](#handling-events)
 7. [Modifing the arrangement](#modifing-the-arrangement)
-8. [API](#api)
+8. [Additional functions](#additional-functions)
+9. [API](#api)
 
 # Installation
 Currently, in order to use WebInter, you have to copy the folder “webinter” into the same folder where your project file is located.
