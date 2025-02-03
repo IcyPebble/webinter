@@ -227,19 +227,7 @@ To handle events that are triggered on an element, you can use the function ```o
 Element.on(event: str, _async) -> Callable[[f: Awaitable], f] | Awaitable[[f: Awaitable], f]
 ```
 
-The **event** parameter defines the type of event to be listened to. Not all events are supported, and they are only supported for certain types of elements. See the following table for all allowed events:
-<details>
-<summary>Allowed events</summary>
-
-| **event** | **elements** |
-|---|---|
-| change | All input elements, except <type = button> |
-| input | All input elements, except <type = button> |
-| click | Input<type = button> and images |
-| play | Audio and video |
-| paused | Audio and video |
-| ended | Audio and video |
-</details><br>
+The **event** parameter defines the type of event to be listened to. Not all events are supported, and they are only supported for certain types of elements. See [here](https://developer.mozilla.org/en-US/docs/Web/Events) for a reference.
 
 The ```on``` function is designed as an decorator:
 ```python
@@ -268,7 +256,7 @@ await Element.on(event, _async=True)(handler)
 
 The “handler” function, as in the examples above, **must** always be async and take two arguments.<br>
 The first argument is the element on which the event was triggered.<br>
-The (new) value of the element or None is given to the function as the second argument. For the “click” event of images, a coordinate is returned [x (left), y (top)].
+The (new) value of the element or None ( = the same value that Element.get() returns) is given to the function as the second argument. For the “click” event of images, a coordinate is returned [x (left), y (top)].
 
 To remove a handler function, the ```remove_event_handler``` function can be called:
 ```python
@@ -420,8 +408,6 @@ Element(webi: WebI, element_type: str, attr: dict, html_tag: str, html_input_typ
  > **attr** (dict): A collection of all attributes
 
  > **group** (Group | None): The group to which the element belongs
-
- > **allowed_events** (dict): A collection of all permitted element types for an event
 </details>
 
 <details>
