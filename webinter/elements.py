@@ -20,11 +20,6 @@ class Element:
         }
         self.group = None
         self._value_response = asyncio.Event() # waits for a value response
-        self.allowed_events = {
-            "change": ["input-number", "input-text", "input-color", "input-file", "input-checkbox", "input-range", "input-select", "input-textarea"],
-            "input": ["input-number", "input-text", "input-color", "input-file", "input-checkbox", "input-range", "input-select","input-textarea"],
-            "click": ["input-button"]
-        }
     
     @staticmethod
     def _async(default: bool):
@@ -82,10 +77,6 @@ class Element:
     # decorator
     def on(self, event, *, _async=False):
         async def register(f):
-            # Check if it is possible to register the event for the element
-            if self.type not in self.allowed_events.get(event, []):
-                raise ValueError(f"Element of type '{self.type}' has no event '{event}' ")
-            
             # create empty dict for event if necessary
             if event not in self.webi.handlers:
                 self.webi.handlers[event] = {}
@@ -152,12 +143,6 @@ class MediaElement(Element):
         self.src = src
         self.attr.pop("src", None)
         self.format = format
-        self.allowed_events.update({
-            "click": ["input-button", "image"],
-            "play": ["audio", "video"],
-            "pause": ["audio", "video"],
-            "ended": ["audio", "video"]
-        })
     
     @Element._async(False)
     async def add(self, position=0, anchor=None):
@@ -209,9 +194,6 @@ class MediaElement(Element):
 class DrawingBoard(Element):
     def __init__(self, webi, element_type, attr, html_tag, html_input_type):
         super().__init__(webi, element_type, attr, html_tag, html_input_type)
-        self.allowed_events.update({
-            # ...
-        })
     
     @Element._async(True)
     async def toggle_eraser(self, erase=None):
