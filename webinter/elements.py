@@ -200,9 +200,9 @@ class DrawingBoard(Element):
         e = erase if erase is not None else not self.attr.get("erase", False)
             
         if e:
-            await self.update_attr({"erase": True}, True)
+            await self.update_attr({"erase": True}, _async=True)
         else:
-            await self.remove_attr(["erase"], True)
+            await self.remove_attr(["erase"], _async=True)
     
     @Element._async(True)
     async def clear(self):
