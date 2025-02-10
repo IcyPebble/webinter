@@ -115,8 +115,10 @@ class Element:
     @_async(True)
     async def remove(self):
         self.webi.elements.pop(id(self), None) # remove from elements
-        for item in self.webi.handlers.items(): # remove from all handlers
-            item.pop(id(self), None)
+        for event in self.webi.handlers.keys(): # remove from all handlers
+            event.pop(id(self), None)
+        if self.group is not None: # remove from group
+            self.group.members.remove(self)
         # remove (server side)
         await self.webi.server._emit("remove_element", id(self))
     
