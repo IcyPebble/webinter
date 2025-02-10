@@ -116,7 +116,7 @@ class Element:
     async def remove(self):
         self.webi.elements.pop(id(self), None) # remove from elements
         for event in self.webi.handlers.keys(): # remove from all handlers
-            event.pop(id(self), None)
+            self.webi.handlers[event].pop(id(self), None)
         if self.group is not None: # remove from group
             self.group.members.remove(self)
         # remove (server side)
