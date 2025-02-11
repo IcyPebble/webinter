@@ -71,11 +71,13 @@ socket.on("register_event", (id, event) => {
             contain_offset_x = Math.floor((el.width - contain_width) / 2);
             contain_offset_y = Math.floor((el.height - contain_height) / 2);
 
+            let x = Math.floor((e.offsetX - contain_offset_x) / contain_scaling);
+            let y = Math.floor((e.offsetY - contain_offset_y) / contain_scaling);
             // value = null if point lies outside of the image
-            value = ((e.offsetX - contain_offset_x >= 0 && e.offsetX - contain_offset_x <= el.width) && (e.offsetY - contain_offset_y >= 0 && e.offsetY - contain_offset_y <= el.height)) ? [
-                Math.floor((e.offsetX - contain_offset_x) / contain_scaling),
-                Math.floor((e.offsetY - contain_offset_y) / contain_scaling)
-            ] : null;
+            value = (
+                (x >= 0 && x <= el.naturalWidth) &&
+                (y >= 0 && y <= el.naturalHeight)
+            ) ? [x, y] : null;
         }
 
         socket.emit("element_event", event, id, value);
