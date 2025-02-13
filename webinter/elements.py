@@ -76,7 +76,7 @@ class Element:
     
     # decorator
     def on(self, event, *, _async=False):
-        async def register(f):
+        def register(f):
             # create empty dict for event if necessary
             if event not in self.webi.handlers:
                 self.webi.handlers[event] = {}
@@ -85,17 +85,19 @@ class Element:
 
             # register event (only the first time)
             if len(self.webi.handlers[event][id(self)]) == 0:
-                await self.webi.server._emit("register_event", id(self), event)
+                if _async:
+                    loop = asyncio.get_running_loop()
+                    loop.create_task(
+                        self.webi.server._emit("register_event", id(self), event)
+                    )
+                else:
+                    asyncio.run(self.webi.server._emit("register_event", id(self), event))
 
             # set decorated function as handler
             self.webi.handlers[event][id(self)][id(f)] = f
 
             return f
-        
-        def register_sync(f):
-            return asyncio.run(register(f))
-        
-        return register if _async else register_sync
+        return register
     
     @_async(True)
     async def remove_event_handler(self, event, handler):
