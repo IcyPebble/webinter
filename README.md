@@ -224,45 +224,48 @@ All other **attributes** apply and behave in the same way **as those of the resp
 ## Handling events
 To handle events that are triggered on an element, you can use the function ```on```:<br>
 ```python
-Element.on(event: str, _async) -> Callable[[f: Awaitable], f] | Awaitable[[f: Awaitable], f]
+element.on(event: str, _async) -> Callable[[f: Awaitable], f] | Awaitable[[f: Awaitable], f]
 ```
 
 The **event** parameter defines the type of event to be listened to. Not all events are supported, and they are only supported for certain types of elements. See [here](https://developer.mozilla.org/en-US/docs/Web/Events) for a reference.
 
 The ```on``` function is designed as an decorator:
 ```python
-@Element.on(event)
+@element.on(event)
 async def handler(element, value):
    # ...
 
 # Same as:
-Element.on(event)(handler)
+element.on(event)(handler)
 ```
 
 You can chain them to register the same function for multiple elements/events at once:
 ```python
-@Element1.on(event1)
-@Element1.on(event2)
-@Element2.on(event)
+@element1.on(event1)
+@element1.on(event2)
+@element2.on(event)
 async def handler(element, value):
    # ...
 ```
 
 It is also possible to use this function in an asynchronous context:
 ```python
-await Element.on(event, _async=True)(handler)
+async def func():
+   @element.on(event, _async=True)
+   async def handler(element, value):
+      # ...
 ```
 <br>
 
 The “handler” function, as in the examples above, **must** always be async and take two arguments.<br>
 The first argument is the element on which the event was triggered.<br>
-The (new) value of the element or None ( = the same value that Element.get() returns) is given to the function as the second argument. For the “click” event of images, a coordinate is returned [x (left), y (top)].
+The (new) value of the element or None ( = the same value that element.get() returns) is given to the function as the second argument. For the “click” event of images, a coordinate is returned [x (left), y (top)].
 
 To remove a handler function, the ```remove_event_handler``` function can be called:
 ```python
-await Element.remove_event_handler(event, handler) # async (default)
+await element.remove_event_handler(event, handler) # async (default)
 
-Element.remove_event_handler(event, handler, _async=False) # sync
+element.remove_event_handler(event, handler, _async=False) # sync
 ```
 
 All registered handlers are stored in the ```webi.handlers``` dictionary as follows:
