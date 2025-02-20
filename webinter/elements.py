@@ -22,14 +22,16 @@ class Element:
         self._value_response = asyncio.Event() # waits for a value response
     
     @staticmethod
-    def _async(default: bool):
+    def _async(default=None):
         def decorator(f):
             @functools.wraps(f)
             def wrapper(*args, **kwargs):
                 async def async_():
                     return await f(*args, **kwargs)
         
-                if kwargs.pop("_async", wrapper._async_default):
+                _a = kwargs.pop("_async", wrapper._async_default)
+                _a = _a if _a is not None else (asyncio.get_event_loop_policy()._local._loop is not None)
+                if _a:
                     return async_()
                 return asyncio.run(async_())
             
@@ -37,10 +39,10 @@ class Element:
             return wrapper
         return decorator
     
-    def __call__(self, *, _async=True):
+    def __call__(self, *, _async=None):
         return self.get(_async=_async)
 
-    @_async(True)
+    @_async()
     async def get(self):
         # Return None if the app hasn't been started yet
         if not self.webi.server.connected:
@@ -59,7 +61,7 @@ class Element:
 
         return value
     
-    @_async(False)
+    @_async()
     async def add(self, position=0, anchor=None):
         # Create html and add to server
         html = HTMLBuilder.create_html_element(
@@ -75,7 +77,7 @@ class Element:
         return self
     
     # decorator
-    def on(self, event, *, _async=False):
+    def on(self, event, *, _async=None):
         def register(f):
             # create empty dict for event if necessary
             if event not in self.webi.handlers:
@@ -85,7 +87,8 @@ class Element:
 
             # register event (only the first time)
             if len(self.webi.handlers[event][id(self)]) == 0:
-                if _async:
+                _a = _async if _async is not None else (asyncio.get_event_loop_policy()._local._loop is not None)
+                if _a:
                     loop = asyncio.get_running_loop()
                     loop.create_task(
                         self.webi.server._emit("register_event", id(self), event)
@@ -99,7 +102,7 @@ class Element:
             return f
         return register
     
-    @_async(True)
+    @_async()
     async def remove_event_handler(self, event, handler):
         assert event in self.webi.handlers
         assert id(self) in self.webi.handlers[event]
@@ -110,11 +113,11 @@ class Element:
         if len(self.webi.handlers[event][id(self)]) == 0:
             await self.webi.server._emit("remove_event", id(self), event)
     
-    @_async(True)
+    @_async()
     async def change_visibility(self, mode="toggle"):
         await self.webi.server._emit("change_visibility", id(self), mode)
         
-    @_async(True)
+    @_async()
     async def remove(self):
         self.webi.elements.pop(id(self), None) # remove from elements
         for event in self.webi.handlers.keys(): # remove from all handlers
@@ -124,7 +127,7 @@ class Element:
         # remove (server side)
         await self.webi.server._emit("remove_element", id(self))
     
-    @_async(True)
+    @_async()
     async def update_attr(self, attr):
         attr.pop("type", None) # Can not change the type (of an input)
         attr.pop("src", None) # Can not change the src (of a media element)
@@ -132,7 +135,7 @@ class Element:
         self.attr.update(attr)
         await self.webi.server._emit("update_attributes", id(self), attr)
     
-    @_async(True)
+    @_async()
     async def remove_attr(self, attribute_names):
         for name in attribute_names:
             # Can not remove the type/src (of an input/media element), or style
@@ -148,13 +151,13 @@ class MediaElement(Element):
         self.attr.pop("src", None)
         self.format = format
     
-    @Element._async(False)
+    @Element._async()
     async def add(self, position=0, anchor=None):
         await super(self.__class__, self).add(position, anchor, _async=True)
         await self.change_src(self.src, self.format, _async=True)
         return self
     
-    @Element._async(True)
+    @Element._async()
     async def change_src(self, src, format):
         self.src = src
         if src is None: return
@@ -199,7 +202,7 @@ class DrawingBoard(Element):
     def __init__(self, webi, element_type, attr, html_tag, html_input_type):
         super().__init__(webi, element_type, attr, html_tag, html_input_type)
     
-    @Element._async(True)
+    @Element._async()
     async def toggle_eraser(self, erase=None):
         e = erase if erase is not None else not self.attr.get("erase", False)
             
@@ -208,19 +211,19 @@ class DrawingBoard(Element):
         else:
             await self.remove_attr(["erase"], _async=True)
     
-    @Element._async(True)
+    @Element._async()
     async def clear(self):
         await self.webi.server._emit("clear_drawing_board", id(self))
     
     # Only strokes
-    @Element._async(True)
+    @Element._async()
     async def undo(self):
         await self.webi.server._emit("undo_drawing_board", id(self))
 
-    def __call__(self, res=1, *, _async=True):
+    def __call__(self, res=1, *, _async=None):
         return self.get(res, _async=_async)
 
-    @Element._async(True)
+    @Element._async()
     async def get(self, res=1):
         if not self.webi.server.connected:
             return None
@@ -243,14 +246,16 @@ class Group:
         self.group = None
     
     @staticmethod
-    def _async(default: bool):
+    def _async(default=None):
         def decorator(f):
             @functools.wraps(f)
             def wrapper(*args, **kwargs):
                 async def async_():
                     return await f(*args, **kwargs)
         
-                if kwargs.pop("_async", wrapper._async_default):
+                _a = kwargs.pop("_async", wrapper._async_default)
+                _a = _a if _a is not None else (asyncio.get_event_loop_policy()._local._loop is not None)
+                if _a:
                     return async_()
                 return asyncio.run(async_())
             
@@ -258,18 +263,18 @@ class Group:
             return wrapper
         return decorator
     
-    @_async(True)
+    @_async()
     async def _create(self):
         await self.webi.server._emit("create_group", id(self), self.sort)
         # Add group to webi
         self.webi.groups[id(self)] = self
     
-    @_async(True)
+    @_async()
     async def toggle_sorting(self, sort):
         await self.webi.server._emit("toggle_sorting", id(self), sort)
         self.sort = sort
 
-    @_async(True)
+    @_async()
     async def add_members(self, members):
         member_ids = []
         for member in members:
@@ -286,7 +291,7 @@ class Group:
 
         await self.webi.server._emit("add_to_group", id(self), member_ids)
     
-    @_async(True)
+    @_async()
     async def remove_members(self, members):
         member_ids = []
         for member in members:
@@ -301,13 +306,13 @@ class Group:
 
         await self.webi.server._emit("remove_from_group", id(self), member_ids)
     
-    @_async(True)
+    @_async()
     async def disband(self):
         del self.webi.groups[id(self)]
         self.members = []
         await self.webi.server._emit("disband_group", id(self))
     
-    @_async(True)
+    @_async()
     async def order(self, elements_in_order):
         ids = []
         for element in elements_in_order:
@@ -337,14 +342,16 @@ class WebI:
         self.server = Server(port=self.port, event_handler=self._event)
     
     @staticmethod
-    def _async(default: bool):
+    def _async(default=None):
         def decorator(f):
             @functools.wraps(f)
             def wrapper(*args, **kwargs):
                 async def async_():
                     return await f(*args, **kwargs)
         
-                if kwargs.pop("_async", wrapper._async_default):
+                _a = kwargs.pop("_async", wrapper._async_default)
+                _a = _a if _a is not None else (asyncio.get_event_loop_policy()._local._loop is not None)
+                if _a:
                     return async_()
                 return asyncio.run(async_())
             
@@ -437,18 +444,18 @@ class WebI:
         
         return core
     
-    @_async(False)
+    @_async()
     async def group(self, members, sort = True):
         group = Group(self, sort)
         await group._create(_async=True)
         await group.add_members(members, _async=True)
         return group
     
-    @_async(True)
+    @_async()
     async def alert(self, message):
         await self.server._emit("alert", message)
 
-    @_async(True)
+    @_async()
     async def order(self, elements_in_order):
         ids = []
         for element in elements_in_order:
@@ -460,7 +467,7 @@ class WebI:
             
         await self.server._emit("order", ids)
     
-    @_async(True)
+    @_async()
     async def download(self, buffer, filename):
         file = {"src": buffer, "mimetype":"application/octet-stream"}
         file_id = uuid.uuid4().int
@@ -486,6 +493,6 @@ class WebI:
     def show(self):
         self.server.run()
     
-    @_async(True)
+    @_async()
     async def shutdown(self):
         await self.server.shutdown()
