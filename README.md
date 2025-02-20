@@ -61,7 +61,8 @@ You can close the application by pressing CTRL+C in the terminal or by directly 
 
 ## Sync or async?
 Due to the use of Quart as a web framework, Webinter is asynchronous by nature. This is also the reason why the event handlers must be declared as asynchronous.<br>
-Almost all other functions can also be used asynchronously, but do not have to be: the ```_async``` parameter can be used to determine whether the function is executed synchronously or acts as an awaitable async function.<br>
+Almost all other functions can also be used asynchronously, but do not have to be: the ```_async``` parameter can be used to determine whether the function is executed synchronously or acts as an awaitable async function.<br>With ```_async = None```, the function is executed either asynchronously or synchronously, depending on the context. ```_async``` is set to None by default.
+
 Therefore, webinter functions can also be called within the event handlers:
 ```python
 btn = webi.input(type="button")
@@ -70,38 +71,36 @@ btn.add() # sync
 @btn.on("click") # sync
 async def onclick(el, v): # async
     txt = webi.text("Clicked!")
-    await txt.add(_async=True) # async
+    await txt.add() # async
+    # -> eq. to: await txt.add(_async=True)
 ```
 
-As you can see with ```btn.add()```, you do not always have to specify the _async parameter. For each function, this parameter is set to either True or False by default, depending on the common use case.<br>
-An overview of the default values of the _async parameter for each function can be found here:<br>
+As you can see with ```btn.add()``` and ```txt.add()```, you do not always have to specify the _async parameter. However, you should not forget to await the functions if they are called in an asynchronous context. If it is necessary to decide for yourself whether the function is asynchronous or not, a list of all functions that accept the _async parameter can be found below:
 <details>
-<summary>Default values of _async</summary>
+<summary>Functions with the _async parameter</summary>
 
-| **function**                 | **_async** |
-|------------------------------|------------|
-| WebI.group                   | False      |
-| WebI.order                   | True       |
-| WebI.alert                   | True       |
-| WebI.download                | True       |
-| WebI.shutdown                | True       |
-| Element.get                  | True       |
-| Element.add                  | False      |
-| Element.remove               | True       |
-| Element.on                   | False      |
-| Element.remove_event_handler | True       |
-| Element.change_visibility    | True       |
-| Element.update_attr          | True       |
-| Element.remove_attr          | True       |
-| MediaElement.change_src      | True       |
-| DrawingBoard.toggle_eraser   | True       |
-| DrawingBoard.clear           | True       |
-| DrawingBoard.undo            | True       |
-| Group.add_members            | True       |
-| Group.remove_members         | True       |
-| Group.disband                | True       |
-| Group.order                  | True       |
-| Group.toggle_sorting         | True       |
+- WebI.group                   
+- WebI.order                   
+- WebI.alert                   
+- WebI.download                
+- WebI.shutdown                
+- Element.get                  
+- Element.add                  
+- Element.remove               
+- Element.on                   
+- Element.remove_event_handler 
+- Element.change_visibility    
+- Element.update_attr          
+- Element.remove_attr          
+- MediaElement.change_src      
+- DrawingBoard.toggle_eraser   
+- DrawingBoard.clear           
+- DrawingBoard.undo            
+- Group.add_members            
+- Group.remove_members         
+- Group.disband                
+- Group.order                  
+- Group.toggle_sorting         
 </details>
 
 ## How to use elements
@@ -251,7 +250,7 @@ async def handler(element, value):
 It is also possible to use this function in an asynchronous context:
 ```python
 async def func():
-   @element.on(event, _async=True)
+   @element.on(event)
    async def handler(element, value):
       # ...
 ```
@@ -263,9 +262,7 @@ The (new) value of the element or None ( = the same value that element.get() ret
 
 To remove a handler function, the ```remove_event_handler``` function can be called:
 ```python
-await element.remove_event_handler(event, handler) # async (default)
-
-element.remove_event_handler(event, handler, _async=False) # sync
+element.remove_event_handler(event, handler)
 ```
 
 All registered handlers are stored in the ```webi.handlers``` dictionary as follows:
