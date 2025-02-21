@@ -13,7 +13,7 @@ close_btn = webi.input("button", label="Close").add()
 async def show(element, _):
     files = await file_input()
     if len(files) > 0:
-        await txt.update_attr({"text": f"Showing: {files[0]["base"]}"})
+        await txt.update_attr({"text": f"Showing: {files[0]['base']}"})
         await img.change_src(files[0]["file"], files[0]["extension"])
     else:
         await webi.alert("No image selected!")
