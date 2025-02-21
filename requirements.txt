@@ -1,0 +1,5 @@
+airium~=0.2.6
+pillow~=10.4.0
+python-socketio~=5.12.1
+quart~=0.20.0
+scipy~=1.15.2

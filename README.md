@@ -15,7 +15,13 @@ The aim of “WebInter” is to provide (existing) Python code with simple and g
 9. [API](#api)
 
 # Installation
-Currently, in order to use WebInter, you have to copy the folder “webinter” into the same folder where your project file is located.
+Currently, in order to use WebInter, you have to copy the folder “webinter” into the same folder where your project file is located.<br>
+You should also install all dependencies as follows:
+```
+pip install -r requirements.txt 
+```
+
+WebInter was developed in Python 3.12, but is meant to work in Python >= 3.9
 
 ## A basic application
 A simple webinter program may look like this:
