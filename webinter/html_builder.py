@@ -1,7 +1,6 @@
 from airium import Airium
 
 class HTMLBuilder:
-    @staticmethod
     def _simple_input(id, **attr):
         a = Airium()
 
@@ -13,7 +12,6 @@ class HTMLBuilder:
 
         return str(a)
     
-    @staticmethod
     def _button(id, **attr):
         a = Airium()
 
@@ -26,7 +24,6 @@ class HTMLBuilder:
 
         return str(a)
     
-    @staticmethod
     def _select(id, **attr):
         del attr["type"]
 
@@ -47,7 +44,6 @@ class HTMLBuilder:
 
         return str(a)
     
-    @staticmethod
     def _textarea(id, **attr):
         del attr["type"]
 
@@ -60,7 +56,6 @@ class HTMLBuilder:
 
         return str(a)
     
-    @staticmethod
     def _drawing_board(id, **attr):
         del attr["type"]
 

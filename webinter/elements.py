@@ -21,7 +21,6 @@ class Element:
         self.group = None
         self._value_response = asyncio.Event() # waits for a value response
     
-    @staticmethod
     def _async(default=None):
         def decorator(f):
             @functools.wraps(f)
@@ -245,7 +244,6 @@ class Group:
         self.members = []
         self.group = None
     
-    @staticmethod
     def _async(default=None):
         def decorator(f):
             @functools.wraps(f)
@@ -341,7 +339,6 @@ class WebI:
         self.port = port
         self.server = Server(port=self.port, event_handler=self._event)
     
-    @staticmethod
     def _async(default=None):
         def decorator(f):
             @functools.wraps(f)
