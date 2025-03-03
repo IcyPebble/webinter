@@ -10,12 +10,13 @@ import functools
 
 class Element:
     def __init__(self, webi, element_type, attr, html_tag, html_input_type):
+        self.id = uuid.uuid4().hex
         self.webi = webi
         self.type = element_type
         self.attr = attr
         self._html_builder_args = {
             "tag_name": html_tag, 
-            "id": id(self),
+            "id": self.id,
             "type": html_input_type,
         }
         self.group = None
@@ -48,7 +49,7 @@ class Element:
             return None
             
         # Call client
-        await self.webi.server._emit("get_value", id(self))
+        await self.webi.server._emit("get_value", self.id)
 
         # Wait for client to return a value
         await self._value_response.wait()
@@ -66,12 +67,12 @@ class Element:
         html = HTMLBuilder.create_html_element(
             **self._html_builder_args, **self.attr
         )
-        anchor_id = id(anchor) if anchor is not None else ""
+        anchor_id = anchor.id if anchor is not None else ""
         await self.webi.server._emit(
-            "add_element", id(self), html,
+            "add_element", self.id, html,
             position, anchor_id
         )
-        self.webi.elements[id(self)] = self
+        self.webi.elements[self.id] = self
             
         return self
     
@@ -81,22 +82,23 @@ class Element:
             # create empty dict for event if necessary
             if event not in self.webi.handlers:
                 self.webi.handlers[event] = {}
-            if id(self) not in self.webi.handlers[event]:
-                self.webi.handlers[event][id(self)] = {}
+            if self.id not in self.webi.handlers[event]:
+                self.webi.handlers[event][self.id] = {}
 
             # register event (only the first time)
-            if len(self.webi.handlers[event][id(self)]) == 0:
+            if len(self.webi.handlers[event][self.id]) == 0:
                 _a = _async if _async is not None else (asyncio.get_event_loop_policy()._local._loop is not None)
                 if _a:
                     loop = asyncio.get_running_loop()
                     loop.create_task(
-                        self.webi.server._emit("register_event", id(self), event)
+                        self.webi.server._emit("register_event", self.id, event)
                     )
                 else:
-                    asyncio.run(self.webi.server._emit("register_event", id(self), event))
+                    asyncio.run(self.webi.server._emit("register_event", self.id, event))
 
             # set decorated function as handler
-            self.webi.handlers[event][id(self)][id(f)] = f
+            f.id = uuid.uuid4().hex
+            self.webi.handlers[event][self.id][f.id] = f
 
             return f
         return register
@@ -104,27 +106,27 @@ class Element:
     @_async()
     async def remove_event_handler(self, event, handler):
         assert event in self.webi.handlers
-        assert id(self) in self.webi.handlers[event]
-        assert id(handler) in self.webi.handlers[event][id(self)]
+        assert self.id in self.webi.handlers[event]
+        assert handler.id in self.webi.handlers[event][self.id]
 
-        del self.webi.handlers[event][id(self)][id(handler)]
+        del self.webi.handlers[event][self.id][handler.id]
 
-        if len(self.webi.handlers[event][id(self)]) == 0:
-            await self.webi.server._emit("remove_event", id(self), event)
+        if len(self.webi.handlers[event][self.id]) == 0:
+            await self.webi.server._emit("remove_event", self.id, event)
     
     @_async()
     async def change_visibility(self, mode="toggle"):
-        await self.webi.server._emit("change_visibility", id(self), mode)
+        await self.webi.server._emit("change_visibility", self.id, mode)
         
     @_async()
     async def remove(self):
-        self.webi.elements.pop(id(self), None) # remove from elements
+        self.webi.elements.pop(self.id, None) # remove from elements
         for event in self.webi.handlers.keys(): # remove from all handlers
-            self.webi.handlers[event].pop(id(self), None)
+            self.webi.handlers[event].pop(self.id, None)
         if self.group is not None: # remove from group
-            self.group.members.remove(self)
+            self.webi.groups[self.group].members.remove(self.id)
         # remove (server side)
-        await self.webi.server._emit("remove_element", id(self))
+        await self.webi.server._emit("remove_element", self.id)
     
     @_async()
     async def update_attr(self, attr):
@@ -132,7 +134,7 @@ class Element:
         attr.pop("src", None) # Can not change the src (of a media element)
         attr.pop("style", None) # Should not change the style
         self.attr.update(attr)
-        await self.webi.server._emit("update_attributes", id(self), attr)
+        await self.webi.server._emit("update_attributes", self.id, attr)
     
     @_async()
     async def remove_attr(self, attribute_names):
@@ -141,7 +143,7 @@ class Element:
             if name == "type" or name == "src" or name == "style":
                 continue
             self.attr.pop(name)
-        await self.webi.server._emit("remove_attributes", id(self), attribute_names)
+        await self.webi.server._emit("remove_attributes", self.id, attribute_names)
 
 class MediaElement(Element):
     def __init__(self, webi, element_type, attr, html_tag, html_input_type, src, format):
@@ -192,9 +194,9 @@ class MediaElement(Element):
             file["src"] = self.src
             
         file["mimetype"] = f"{self.type}/{format.lower()}"
-        self.webi.server.file_storage[id(self)] = file
+        self.webi.server.file_storage[self.id] = file
         await self.webi.server._emit(
-            "change_src", id(self), file["mimetype"]
+            "change_src", self.id, file["mimetype"]
         )
 
 class DrawingBoard(Element):
@@ -212,12 +214,12 @@ class DrawingBoard(Element):
     
     @Element._async()
     async def clear(self):
-        await self.webi.server._emit("clear_drawing_board", id(self))
+        await self.webi.server._emit("clear_drawing_board", self.id)
     
     # Only strokes
     @Element._async()
     async def undo(self):
-        await self.webi.server._emit("undo_drawing_board", id(self))
+        await self.webi.server._emit("undo_drawing_board", self.id)
 
     def __call__(self, res=1, *, _async=None):
         return self.get(res, _async=_async)
@@ -227,7 +229,7 @@ class DrawingBoard(Element):
         if not self.webi.server.connected:
             return None
             
-        await self.webi.server._emit("get_drawing_board", id(self), res)
+        await self.webi.server._emit("get_drawing_board", self.id, res)
 
         await self._value_response.wait()
         value = self._value_response.value
@@ -239,6 +241,7 @@ class DrawingBoard(Element):
 
 class Group:
     def __init__(self, webi, sort):
+        self.id = uuid.uuid4().hex
         self.webi = webi
         self.sort = sort
         self.members = []
@@ -263,13 +266,13 @@ class Group:
     
     @_async()
     async def _create(self):
-        await self.webi.server._emit("create_group", id(self), self.sort)
+        await self.webi.server._emit("create_group", self.id, self.sort)
         # Add group to webi
-        self.webi.groups[id(self)] = self
+        self.webi.groups[self.id] = self
     
     @_async()
     async def toggle_sorting(self, sort):
-        await self.webi.server._emit("toggle_sorting", id(self), sort)
+        await self.webi.server._emit("toggle_sorting", self.id, sort)
         self.sort = sort
 
     @_async()
@@ -279,54 +282,54 @@ class Group:
             # Only add elements without a group
             if member.group is not None:
                 raise ValueError(f"{member} is already part of a group")
-            if member == self:
+            if member.id == self.id:
                 raise ValueError("Attempt to add the group as a member of the group itself")
             
             # Set elements group and add to members
-            member.group = self
-            self.members.append(member)
-            member_ids.append(id(member))
+            member.group = self.id
+            self.members.append(member.id)
+            member_ids.append(member.id)
 
-        await self.webi.server._emit("add_to_group", id(self), member_ids)
+        await self.webi.server._emit("add_to_group", self.id, member_ids)
     
     @_async()
     async def remove_members(self, members):
         member_ids = []
         for member in members:
             # Only remove members that are in this group
-            if member.group != self:
+            if member.group != self.id:
                 raise ValueError(f"{member} is not part of this group")
                 
             # Set elements group to None and remove from members
             member.group = None
-            self.members.remove(member)
-            member_ids.append(id(member))
+            self.members.remove(member.id)
+            member_ids.append(member.id)
 
-        await self.webi.server._emit("remove_from_group", id(self), member_ids)
+        await self.webi.server._emit("remove_from_group", self.id, member_ids)
     
     @_async()
     async def disband(self):
-        del self.webi.groups[id(self)]
+        del self.webi.groups[self.id]
         self.members = []
-        await self.webi.server._emit("disband_group", id(self))
+        await self.webi.server._emit("disband_group", self.id)
     
     @_async()
     async def order(self, elements_in_order):
         ids = []
         for element in elements_in_order:
             # Can't order elements properly if in a different group
-            if element.group != self:
+            if element.group != self.id:
                 raise ValueError(f"{element} is not part of this group")
             
-            ids.append(id(element))
+            ids.append(element.id)
             
         # Order self.members accordingly
         ordered_members = []
         for m in self.members:
-            if m not in elements_in_order:
+            if m not in ids:
                 ordered_members.append(m)
-            if m == elements_in_order[0]:
-                ordered_members.extend(elements_in_order)
+            if m == ids[0]:
+                ordered_members.extend(ids)
         self.members = ordered_members
             
         await self.webi.server._emit("order", ids)
@@ -337,7 +340,7 @@ class WebI:
         self.elements = {}
         self.groups = {}
         self.port = port
-        self.server = Server(port=self.port, event_handler=self._event)
+        self.server = Server(port=self.port, event_handler=self._event, webi=self)
     
     def _async(default=None):
         def decorator(f):
@@ -460,14 +463,14 @@ class WebI:
             if element.group is not None:
                 raise ValueError(f"{element} is part of a group")
                 
-            ids.append(id(element))
+            ids.append(element.id)
             
         await self.server._emit("order", ids)
     
     @_async()
     async def download(self, buffer, filename):
         file = {"src": buffer, "mimetype":"application/octet-stream"}
-        file_id = uuid.uuid4().int
+        file_id = uuid.uuid4().hex
         self.server.file_storage[file_id] = file
         await self.server._emit(
             "download", str(file_id), filename

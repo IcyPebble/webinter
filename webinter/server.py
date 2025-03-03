@@ -9,9 +9,10 @@ from hypercorn.config import Config
 from hypercorn.asyncio import serve
 import io
 import signal
+import copy
 
 class Server:
-    def __init__(self, port, event_handler):
+    def __init__(self, port, event_handler, webi):
         self.app = Quart(__name__)
         self.socketio = pysocketio.AsyncServer(async_mode='asgi')
         self.socketio_app = pysocketio.ASGIApp(self.socketio, self.app)
@@ -25,8 +26,16 @@ class Server:
 
         self.file_storage = {}
 
-        self.prestart_queue = []
+        self.onstart = []
+        self.started = False
+        self.ended = False
+        self.event_queue = []
         self.connected = False
+
+        self.sid = None
+
+        self.webi = webi
+        self.entry_point = {}
 
         self.routes()
 
@@ -39,7 +48,7 @@ class Server:
         async def file_upload():
             element_id = (await request.form).get("id")
             files = (await request.files).getlist(element_id)
-            element_id = int(element_id)
+            element_id = element_id
 
             value = []
             for f in files:
@@ -64,7 +73,7 @@ class Server:
 
         @self.app.route("/get_file", methods=["GET"])
         async def get_file():
-            element_id = int(request.args.get("id"))
+            element_id = request.args.get("id")
             file = self.file_storage.pop(element_id, None)
 
             if file is None:
@@ -76,16 +85,26 @@ class Server:
         @self.socketio.on("connect")
         async def connection(id, env, auth):
             print("Connected: ", id)
-            self.connected = True
 
-            while len(self.prestart_queue):
-                event = self.prestart_queue.pop(0)
-                await self.socketio.emit(*event)
+            if not self.connected:
+                self.sid = id
+                self.connected = True
+
+                if self.started:
+                    self.restore_entry_point()
+                else:
+                    self.started = True
+
+                for event in self.onstart:
+                    await self.socketio.emit(*event)
+            else:
+                await self.socketio.emit("disconnect_client", "WebInter doesn't support multiple clients.", to=id)
         
         @self.socketio.on("disconnect")
         async def connection(id):
             print("Disconnected: ", id)
-            self.connected = False
+            if id == self.sid:
+                self.connected = False
                 
         @self.socketio.on("reconnect_attempt")
         async def handle_reconnecting(id):
@@ -103,10 +122,42 @@ class Server:
         @self.socketio.on("error")
         async def on_error(id, msg):
             raise Exception(f"[ERROR]: {msg}")
+        
+    def set_entry_point(self):
+        self.entry_point["handlers"] = copy.deepcopy(self.webi.handlers)
+
+        self.entry_point["elements"] = {}
+        for el_id, el in self.webi.elements.items():
+            self.entry_point["elements"][el_id] = copy.copy(el.__dict__)
+            self.entry_point["elements"][el_id]["webi"] = self.webi
+
+        self.entry_point["groups"] = {}
+        for gp_id, gp in self.webi.groups.items():
+            self.entry_point["groups"][gp_id] = copy.copy(gp.__dict__)
+            self.entry_point["groups"][gp_id]["webi"] = self.webi
+    
+    def restore_entry_point(self):
+        self.webi.handlers = copy.deepcopy(self.entry_point["handlers"])
+
+        for element_id in copy.copy(self.webi.elements):
+            if element_id in self.entry_point["elements"]:
+                self.webi.elements[element_id].__dict__.update(self.entry_point["elements"][element_id])
+            else:
+                self.webi.elements[element_id].webi = None
+                del self.webi.elements[element_id]
+
+        for group_id in copy.copy(self.webi.groups):
+            if group_id in self.entry_point["groups"]:
+                self.webi.groups[group_id].__dict__.update(self.entry_point["groups"][group_id])
+            else:
+                self.webi.groups[group_id].webi = None
+                del self.webi.groups[group_id]
     
     async def _emit(self, event, *data):
-        if not self.connected:
-            self.prestart_queue.append((event, data))
+        if self.ended:
+            raise Exception("The server has been shut down")
+        if not self.started:
+            self.onstart.append((event, data))
             return
         
         await self.socketio.emit(event, data)
@@ -130,4 +181,7 @@ class Server:
         signal.signal(signal.SIGINT, shutdown)
         signal.signal(signal.SIGTERM, shutdown)
 
+        self.set_entry_point()
         loop.run_until_complete(serve(self.socketio_app, self.config, shutdown_trigger=self.shutdown_trigger.wait))
+        self.started = False
+        self.ended = True

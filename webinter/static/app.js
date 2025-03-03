@@ -357,6 +357,23 @@ socket.on("shutdown", () => {
         alert("The server has been shut down so this page will be reloaded.");
         window.location.reload();
     }, 200);
+});
+
+socket.on("disconnect_client", (msg) => {
+    socket.disconnect();
+
+    setTimeout(() => {
+        info = document.createElement("div");
+        info.style.width = "100vw";
+        info.style.height = "100vh";
+        info.style.display = "flex";
+        info.style.justifyContent = "center";
+        info.style.alignItems = "center";
+        info.style.fontSize = "2em";
+
+        info.innerText = msg;
+        document.body.replaceChildren(info);
+    }, 200);
 })
 
 window.onerror = (msg, url, line) => {
