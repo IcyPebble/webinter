@@ -476,7 +476,7 @@ class WebI:
     
     @_async()
     async def alert(self, message):
-        await self.server._emit(self.name, "alert", message)
+        await self.server._emit(self.name, "alert", str(message))
 
     @_async()
     async def order(self, elements_in_order):
