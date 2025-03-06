@@ -45,11 +45,11 @@ class Element:
     @_async()
     async def get(self):
         # Return None if the app hasn't been started yet
-        if not self.webi.server.connected:
+        if not self.webi.server.namespaces[self.webi.name].connected:
             return None
             
         # Call client
-        await self.webi.server._emit("get_value", self.id)
+        await self.webi.server._emit(self.webi.name, "get_value", self.id)
 
         # Wait for client to return a value
         await self._value_response.wait()
@@ -69,7 +69,7 @@ class Element:
         )
         anchor_id = anchor.id if anchor is not None else ""
         await self.webi.server._emit(
-            "add_element", self.id, html,
+            self.webi.name, "add_element", self.id, html,
             position, anchor_id
         )
         self.webi.elements[self.id] = self
@@ -91,10 +91,10 @@ class Element:
                 if _a:
                     loop = asyncio.get_running_loop()
                     loop.create_task(
-                        self.webi.server._emit("register_event", self.id, event)
+                        self.webi.server._emit(self.webi.name, "register_event", self.id, event)
                     )
                 else:
-                    asyncio.run(self.webi.server._emit("register_event", self.id, event))
+                    asyncio.run(self.webi.server._emit(self.webi.name, "register_event", self.id, event))
 
             # set decorated function as handler
             f.id = uuid.uuid4().hex
@@ -112,11 +112,11 @@ class Element:
         del self.webi.handlers[event][self.id][handler.id]
 
         if len(self.webi.handlers[event][self.id]) == 0:
-            await self.webi.server._emit("remove_event", self.id, event)
+            await self.webi.server._emit(self.webi.name, "remove_event", self.id, event)
     
     @_async()
     async def change_visibility(self, mode="toggle"):
-        await self.webi.server._emit("change_visibility", self.id, mode)
+        await self.webi.server._emit(self.webi.name, "change_visibility", self.id, mode)
         
     @_async()
     async def remove(self):
@@ -126,7 +126,7 @@ class Element:
         if self.group is not None: # remove from group
             self.webi.groups[self.group].members.remove(self.id)
         # remove (server side)
-        await self.webi.server._emit("remove_element", self.id)
+        await self.webi.server._emit(self.webi.name, "remove_element", self.id)
     
     @_async()
     async def update_attr(self, attr):
@@ -134,7 +134,7 @@ class Element:
         attr.pop("src", None) # Can not change the src (of a media element)
         attr.pop("style", None) # Should not change the style
         self.attr.update(attr)
-        await self.webi.server._emit("update_attributes", self.id, attr)
+        await self.webi.server._emit(self.webi.name, "update_attributes", self.id, attr)
     
     @_async()
     async def remove_attr(self, attribute_names):
@@ -143,7 +143,7 @@ class Element:
             if name == "type" or name == "src" or name == "style":
                 continue
             self.attr.pop(name)
-        await self.webi.server._emit("remove_attributes", self.id, attribute_names)
+        await self.webi.server._emit(self.webi.name, "remove_attributes", self.id, attribute_names)
 
 class MediaElement(Element):
     def __init__(self, webi, element_type, attr, html_tag, html_input_type, src, format):
@@ -195,7 +195,7 @@ class MediaElement(Element):
             
         file["mimetype"] = f"{self.type}/{format.lower()}"
         self.webi.server.file_storage[self.id] = file
-        await self.webi.server._emit(
+        await self.webi.server._emit(self.webi.name, 
             "change_src", self.id, file["mimetype"]
         )
 
@@ -214,22 +214,22 @@ class DrawingBoard(Element):
     
     @Element._async()
     async def clear(self):
-        await self.webi.server._emit("clear_drawing_board", self.id)
+        await self.webi.server._emit(self.webi.name, "clear_drawing_board", self.id)
     
     # Only strokes
     @Element._async()
     async def undo(self):
-        await self.webi.server._emit("undo_drawing_board", self.id)
+        await self.webi.server._emit(self.webi.name, "undo_drawing_board", self.id)
 
     def __call__(self, res=1, *, _async=None):
         return self.get(res, _async=_async)
 
     @Element._async()
     async def get(self, res=1):
-        if not self.webi.server.connected:
+        if not self.webi.server.namespaces[self.webi.name].connected:
             return None
             
-        await self.webi.server._emit("get_drawing_board", self.id, res)
+        await self.webi.server._emit(self.webi.name, "get_drawing_board", self.id, res)
 
         await self._value_response.wait()
         value = self._value_response.value
@@ -266,13 +266,13 @@ class Group:
     
     @_async()
     async def _create(self):
-        await self.webi.server._emit("create_group", self.id, self.sort)
+        await self.webi.server._emit(self.webi.name, "create_group", self.id, self.sort)
         # Add group to webi
         self.webi.groups[self.id] = self
     
     @_async()
     async def toggle_sorting(self, sort):
-        await self.webi.server._emit("toggle_sorting", self.id, sort)
+        await self.webi.server._emit(self.webi.name, "toggle_sorting", self.id, sort)
         self.sort = sort
 
     @_async()
@@ -290,7 +290,7 @@ class Group:
             self.members.append(member.id)
             member_ids.append(member.id)
 
-        await self.webi.server._emit("add_to_group", self.id, member_ids)
+        await self.webi.server._emit(self.webi.name, "add_to_group", self.id, member_ids)
     
     @_async()
     async def remove_members(self, members):
@@ -305,13 +305,13 @@ class Group:
             self.members.remove(member.id)
             member_ids.append(member.id)
 
-        await self.webi.server._emit("remove_from_group", self.id, member_ids)
+        await self.webi.server._emit(self.webi.name, "remove_from_group", self.id, member_ids)
     
     @_async()
     async def disband(self):
         del self.webi.groups[self.id]
         self.members = []
-        await self.webi.server._emit("disband_group", self.id)
+        await self.webi.server._emit(self.webi.name, "disband_group", self.id)
     
     @_async()
     async def order(self, elements_in_order):
@@ -332,15 +332,17 @@ class Group:
                 ordered_members.extend(ids)
         self.members = ordered_members
             
-        await self.webi.server._emit("order", ids)
+        await self.webi.server._emit(self.webi.name, "order", ids)
 
 class WebI:
     def __init__(self, port=8000):
         self.handlers = {}
         self.elements = {}
         self.groups = {}
+        self.namespaces = {}
         self.port = port
-        self.server = Server(port=self.port, event_handler=self._event, webi=self)
+        self.name = "/"
+        self.server = Server(port=self.port, event_handler=self._event, onload=lambda: self._onload(), webi=self)
     
     def _async(default=None):
         def decorator(f):
@@ -444,6 +446,14 @@ class WebI:
         
         return core
     
+    def namespace(self, name):
+        if (self.name + name) in ["/file_upload", "/get_file"]:
+            raise ValueError(f"The namespace '{name}' is reserved")
+        namespace = Namespace(name, self)
+        self.namespaces[namespace.name] = namespace
+
+        return namespace
+    
     @_async()
     async def group(self, members, sort = True):
         group = Group(self, sort)
@@ -453,7 +463,7 @@ class WebI:
     
     @_async()
     async def alert(self, message):
-        await self.server._emit("alert", message)
+        await self.server._emit(self.name, "alert", message)
 
     @_async()
     async def order(self, elements_in_order):
@@ -465,16 +475,26 @@ class WebI:
                 
             ids.append(element.id)
             
-        await self.server._emit("order", ids)
+        await self.server._emit(self.name, "order", ids)
     
     @_async()
     async def download(self, buffer, filename):
         file = {"src": buffer, "mimetype":"application/octet-stream"}
         file_id = uuid.uuid4().hex
         self.server.file_storage[file_id] = file
-        await self.server._emit(
+        await self.server._emit(self.name, 
             "download", str(file_id), filename
         )
+    
+    @_async()
+    async def open_url(self, url, open_new_tab=False):
+        await self.server._emit(self.name, "open_url", url, open_new_tab)
+    
+    async def _onload(self):
+        return
+
+    def onload(self, handler):
+        self._onload = handler
     
     # generic event handler
     async def _event(self, type, id, value):
@@ -496,3 +516,18 @@ class WebI:
     @_async()
     async def shutdown(self):
         await self.server.shutdown()
+
+class Namespace(WebI):
+    def __init__(self, name, base):
+        self.handlers = {}
+        self.elements = {}
+        self.groups = {}
+        self.namespaces = {}
+        self.port = base.port
+        self.name = base.name + name + "/"
+        self.server = base.server
+
+        self.show = None
+        self.shutdown = None
+        
+        base.server.add_namespace(self, self._event, lambda: self._onload())

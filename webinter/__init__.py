@@ -1,1 +1,1 @@
-from webinter.elements import WebI, Element, MediaElement, DrawingBoard, Group
+from webinter.elements import WebI, Element, MediaElement, DrawingBoard, Group, Namespace

@@ -1,4 +1,4 @@
-const socket = io({
+const socket = io(window.location.href, {
     reconnectionAttempts: 4
 });
 
@@ -91,6 +91,7 @@ socket.on("remove_event", (id, event) => {
 function on_get_files(id, files) {
     let data = new FormData();
     data.append("id", id);
+    data.append("namespace", window.location.pathname);
 
     for (let file of files) {
         data.append(id, file, file.name);
@@ -348,6 +349,20 @@ socket.on("download", (id, filename) => {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
     });
+})
+
+socket.on("open_url", (url, open_new_tab) => {
+    let link = document.createElement("a");
+    link.href = url;
+
+    if (open_new_tab) {
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+    }
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 })
 
 socket.on("shutdown", () => {
