@@ -241,9 +241,11 @@ socket.on("change_visibility", (id, mode) => {
     switch (mode) {
         case "show":
             element.style.display = "";
+            break;
 
         case "hide":
             element.style.display = "none";
+            break;
 
         case "toggle":
             element.style.display = (element.style.display === "none") ? "" : "none";
