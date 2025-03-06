@@ -19,7 +19,7 @@ class Element:
             "id": self.id,
             "type": html_input_type,
         }
-        self.group = None
+        self._group = None
         self._value_response = asyncio.Event() # waits for a value response
     
     def _async(default=None):
@@ -38,6 +38,10 @@ class Element:
             wrapper._async_default = default
             return wrapper
         return decorator
+
+    @property
+    def group(self):
+        return self.webi.groups.get(self._group, None)
     
     def __call__(self, *, _async=None):
         return self.get(_async=_async)
@@ -123,8 +127,9 @@ class Element:
         self.webi.elements.pop(self.id, None) # remove from elements
         for event in self.webi.handlers.keys(): # remove from all handlers
             self.webi.handlers[event].pop(self.id, None)
-        if self.group is not None: # remove from group
-            self.webi.groups[self.group].members.remove(self.id)
+        if self._group is not None: # remove from group
+            self.webi.groups[self._group]._members.remove(self.id)
+            self._group = None
         # remove (server side)
         await self.webi.server._emit(self.webi.name, "remove_element", self.id)
     
@@ -244,8 +249,8 @@ class Group:
         self.id = uuid.uuid4().hex
         self.webi = webi
         self.sort = sort
-        self.members = []
-        self.group = None
+        self._members = []
+        self._group = None
     
     def _async(default=None):
         def decorator(f):
@@ -264,6 +269,14 @@ class Group:
             return wrapper
         return decorator
     
+    @property
+    def group(self):
+        return self.webi.groups.get(self._group, None)
+
+    @property
+    def members(self):
+        return [self.webi.elements[m_id] for m_id in self._members]
+    
     @_async()
     async def _create(self):
         await self.webi.server._emit(self.webi.name, "create_group", self.id, self.sort)
@@ -280,14 +293,14 @@ class Group:
         member_ids = []
         for member in members:
             # Only add elements without a group
-            if member.group is not None:
+            if member._group is not None:
                 raise ValueError(f"{member} is already part of a group")
             if member.id == self.id:
                 raise ValueError("Attempt to add the group as a member of the group itself")
             
             # Set elements group and add to members
-            member.group = self.id
-            self.members.append(member.id)
+            member._group = self.id
+            self._members.append(member.id)
             member_ids.append(member.id)
 
         await self.webi.server._emit(self.webi.name, "add_to_group", self.id, member_ids)
@@ -297,12 +310,12 @@ class Group:
         member_ids = []
         for member in members:
             # Only remove members that are in this group
-            if member.group != self.id:
+            if member._group != self.id:
                 raise ValueError(f"{member} is not part of this group")
                 
             # Set elements group to None and remove from members
-            member.group = None
-            self.members.remove(member.id)
+            member._group = None
+            self._members.remove(member.id)
             member_ids.append(member.id)
 
         await self.webi.server._emit(self.webi.name, "remove_from_group", self.id, member_ids)
@@ -310,7 +323,7 @@ class Group:
     @_async()
     async def disband(self):
         del self.webi.groups[self.id]
-        self.members = []
+        self._members = []
         await self.webi.server._emit(self.webi.name, "disband_group", self.id)
     
     @_async()
@@ -318,19 +331,19 @@ class Group:
         ids = []
         for element in elements_in_order:
             # Can't order elements properly if in a different group
-            if element.group != self.id:
+            if element._group != self.id:
                 raise ValueError(f"{element} is not part of this group")
             
             ids.append(element.id)
             
-        # Order self.members accordingly
+        # Order self._members accordingly
         ordered_members = []
-        for m in self.members:
+        for m in self._members:
             if m not in ids:
                 ordered_members.append(m)
             if m == ids[0]:
                 ordered_members.extend(ids)
-        self.members = ordered_members
+        self._members = ordered_members
             
         await self.webi.server._emit(self.webi.name, "order", ids)
 
@@ -470,7 +483,7 @@ class WebI:
         ids = []
         for element in elements_in_order:
             # Can't order elements properly if in a group
-            if element.group is not None:
+            if element._group is not None:
                 raise ValueError(f"{element} is part of a group")
                 
             ids.append(element.id)
