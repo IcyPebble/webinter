@@ -1,4 +1,4 @@
-const socket = io({
+const socket = io(window.location.href, {
     reconnectionAttempts: 4
 });
 
@@ -91,6 +91,7 @@ socket.on("remove_event", (id, event) => {
 function on_get_files(id, files) {
     let data = new FormData();
     data.append("id", id);
+    data.append("namespace", window.location.pathname);
 
     for (let file of files) {
         data.append(id, file, file.name);
@@ -240,9 +241,11 @@ socket.on("change_visibility", (id, mode) => {
     switch (mode) {
         case "show":
             element.style.display = "";
+            break;
 
         case "hide":
             element.style.display = "none";
+            break;
 
         case "toggle":
             element.style.display = (element.style.display === "none") ? "" : "none";
@@ -350,12 +353,43 @@ socket.on("download", (id, filename) => {
     });
 })
 
+socket.on("open_url", (url, open_new_tab) => {
+    let link = document.createElement("a");
+    link.href = url;
+
+    if (open_new_tab) {
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+    }
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+})
+
 socket.on("shutdown", () => {
     socket.disconnect();
 
     setTimeout(() => {
         alert("The server has been shut down so this page will be reloaded.");
         window.location.reload();
+    }, 200);
+});
+
+socket.on("disconnect_client", (msg) => {
+    socket.disconnect();
+
+    setTimeout(() => {
+        info = document.createElement("div");
+        info.style.width = "100vw";
+        info.style.height = "100vh";
+        info.style.display = "flex";
+        info.style.justifyContent = "center";
+        info.style.alignItems = "center";
+        info.style.fontSize = "2em";
+
+        info.innerText = msg;
+        document.body.replaceChildren(info);
     }, 200);
 })
 
