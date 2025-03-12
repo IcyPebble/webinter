@@ -11,7 +11,7 @@ The aim of “WebInter” is to provide (existing) Python code with simple and g
 5. [How to use elements](#how-to-use-elements)
 6. [Handling events](#handling-events)
 7. [Modifing the arrangement](#modifing-the-arrangement)
-8. [Additional functions](#additional-functions)
+8. [More on the WebI instance](#more-on-the-webi-instance)
 9. [API](#api)
 
 # Installation
@@ -322,8 +322,42 @@ The position can be either -1 or 1.<br>
 A position of -1 places the element **before** the anchor element,<br>
 while a position of 1 places the element **after** the anchor element.<br>
 
+## More on the WebI instance
+### Behavior on page refresh
+When you visit the page for the first time, the server saves the current status of the application. If you then load the page again, the saved state is restored. This also means that the attributes of all elements, groups etc. are reset. However, this does not apply to the webi.handlers dictionary.<br>
+Take the following code as an example:
+```python
+webi = WebI()
 
-## Additional functions
+txt = webi.text("foo").add()
+btn = webi.input("button", label="Click me!").add()
+
+@btn.on("click")
+async def change_text(*_):
+   await txt.update_attr({"text": "bar"})
+```
+After the button has been clicked, the text of the text element changes to “bar”. However, when the page is reloaded, the text changes back to “foo”.
+
+If you want to call a function every time the page is loaded, you can register it as an onload handler:
+```python
+@webi.onload
+async def handler():
+   # ...
+```
+This function must be async and registering a different onload handler will overwrite the existing one.
+
+### Namespaces
+Although it is not possible for several clients to call up the same page, it is possible to create “subpages” or namespaces, where you can add further elements apart from the main page:
+```python
+namespace = webi.namespace(name: str)
+```
+Here, **name** refers to the name of the namespace and **should not** begin or end with a slash ("/").
+The final name, with which the namespace can also be opened, is composed as follows:<br>"< *.name of the instance from which the namespace was created* >< *name* >/"<br>(This can be accessed via the *name* property).
+
+The namespace method returns a ```Namespace``` instance that is almost identical to the ```WebI``` instance. Only *shutdown* and *show* cannot be called and all properties (except server) are newly initialized. You can access all registered namespaces in the parent's *namespaces* dictionary (```namespaces[Namespace.name] = Namespace```).<br>
+Namespaces cannot be revoked and are therefore not affected by reloading the parent page.
+
+### Additional functions
 You can display a pop-up with ```webi.alert(msg: str)```.
 
 ---
@@ -332,6 +366,13 @@ A download window can be opened in the following way:
 webi.download(buffer: IOBuffer, filename: str)
 ```
 Here, **buffer** contains the (binary) file data and **filename** defines the name of the file including its extension.
+
+---
+It is possible to open an URL with:
+```python
+webi.open_url(url: str, open_new_tab: bool)
+```
+**open_new_tab** defines, whether the URL is opened in a new tab or in the same tab. This may also be used to navigate between namespaces.
 
 ## API
 ### WebI
@@ -358,6 +399,13 @@ WebI(port: int = 8000)
  > **groups** (dict): A collection of all groups.<br>
  groups[group_id] = group
 
+ > **namespaces** (dict): A collection of all registered namespaces.<br>
+ namespaces[namespace.name] = namespace
+
+ > **port** (int): The port of the server
+
+ > **name** (str): The url path, e.g "/sub". If this is the initial WebI instance, it is equal to "/"
+
  > **server** (Server): The underlying server instance
 </details>
 
@@ -375,15 +423,54 @@ WebI(port: int = 8000)
 
  > **group(members, sort, _async)**:<br>
     Returns a ```Group```.<br>
-    See [Group](#group) for more information
+    See [Groups](#groups) for more information
+
+ > **namespace(name)**:<br>
+    Returns a ```Namespace```.<br>
+    See [Namespaces](#namespaces) for more information
 
  > **alert(message, _async)**: Displays a message pop-up.
 
  > **order(elements_in_order, _async)**: Arranges the elements as given. Not all elements have to be provided.
 
+ > **download(buffer, filename)**: Displays a file dialog for saving the provided buffer.
+
+ > **open_url(url, open_new_tab)**: Opens the specified URL in the browser.
+
+ > **onload(handler)**: Registers a function as the onload handler. Intended to be used as a decorator.
+
  > **show()**: Starts the server/application.
 
  > **shutdown()**: Closes the application.
+</details>
+
+### Namespace(WebI)
+```python
+Namespace(name: str, base: WebI)
+```
+<details>
+<summary>Parameters</summary>
+
+ > **name** (str): The name of the namespace, the first character should not be a slash
+
+ > **base** (WebI): The WebI instance to which this namespace belongs
+</details>
+
+<details>
+<summary>Attributes</summary>
+
+*__Namespace__ inherits attributes from its parent, __WebI__*
+
+</details>
+
+<details>
+<summary>Methods</summary>
+
+*__Namespace__ inherits methods from its parent, __WebI__*
+
+ > **show**: Cannot be called
+
+ > **shutdown**: Cannot be called
 </details>
 
 ### Element
