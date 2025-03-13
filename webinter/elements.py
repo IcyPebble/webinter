@@ -251,6 +251,7 @@ class Group:
         self.sort = sort
         self._members = []
         self._group = None
+        self.type = "group"
     
     def _async(default=None):
         def decorator(f):
@@ -275,7 +276,34 @@ class Group:
 
     @property
     def members(self):
-        return [self.webi.elements[m_id] for m_id in self._members]
+        return self.get_members()
+    
+    def get_members(self, _except=[], resolve_groups=False):
+        def _get_members(ids, resolve_groups):
+            members = []
+            for m_id in ids:
+                if m_id in self.webi.elements: # Element
+                    members.append(self.webi.elements[m_id])
+                else: # Group
+                    group = self.webi.groups[m_id]
+                    if resolve_groups:
+                        members.extend(_get_members(group._members, resolve_groups))
+                    else:
+                        members.append(group)
+            
+            return members
+        
+        members = _get_members(self._members, resolve_groups)
+
+        # Filter members
+        for i, exc in enumerate(_except):
+            if not isinstance(exc, str):
+                _except[i] = exc.id
+        members = [
+            m for m in members if not (m.id in _except or m.type in _except)
+        ]
+
+        return members
     
     @_async()
     async def _create(self):
@@ -292,11 +320,16 @@ class Group:
     async def add_members(self, members):
         member_ids = []
         for member in members:
-            # Only add elements without a group
-            if member._group is not None:
-                raise ValueError(f"{member} is already part of a group")
-            if member.id == self.id:
-                raise ValueError("Attempt to add the group as a member of the group itself")
+            # Only add members that are not part of this group or the group itself
+            def check(member):
+                if member.id in self._members:
+                    raise ValueError(f"Element of type '{member.type}' with id '{member.id}' is already part of this group")
+                if member.id == self.id:
+                    raise ValueError("Attempt to add the group as a member of the group itself")
+                if member.type == "group":
+                    for mem in member.members:
+                        check(mem)
+            check(member)
             
             # Set elements group and add to members
             member._group = self.id
@@ -311,17 +344,30 @@ class Group:
         for member in members:
             # Only remove members that are in this group
             if member._group != self.id:
-                raise ValueError(f"{member} is not part of this group")
+                raise ValueError(f"Element of type '{member.type}' with id '{member.id}' is not part of this group")
                 
-            # Set elements group to None and remove from members
-            member._group = None
+            # Set elements group to parent group and remove from members
+            member._group = self._group
             self._members.remove(member.id)
+            if self._group is not None:
+                self.webi.groups[self._group]._members.append(member.id)
             member_ids.append(member.id)
 
         await self.webi.server._emit(self.webi.name, "remove_from_group", self.id, member_ids)
     
     @_async()
     async def disband(self):
+        # Append members to parent group (if possible)
+        for member in self.members:
+            member._group = self._group
+            if self._group is not None:
+                self.webi.groups[self._group]._members.append(member.id)
+
+        # Remove self from parent group (if possible)
+        if self._group is not None:
+            self.webi.groups[self._group]._members.remove(self.id)
+            self._group = None
+        
         del self.webi.groups[self.id]
         self._members = []
         await self.webi.server._emit(self.webi.name, "disband_group", self.id)
@@ -332,7 +378,7 @@ class Group:
         for element in elements_in_order:
             # Can't order elements properly if in a different group
             if element._group != self.id:
-                raise ValueError(f"{element} is not part of this group")
+                raise ValueError(f"Element of type '{element.type}' with id '{element.id}' is not part of this group")
             
             ids.append(element.id)
             
@@ -484,7 +530,7 @@ class WebI:
         for element in elements_in_order:
             # Can't order elements properly if in a group
             if element._group is not None:
-                raise ValueError(f"{element} is part of a group")
+                raise ValueError(f"Element of type '{element.type}' with id '{element.id}' is part of a group")
                 
             ids.append(element.id)
             
