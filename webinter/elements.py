@@ -7,6 +7,7 @@ import numpy as np
 from scipy.io import wavfile
 import asyncio
 import functools
+from collections.abc import Sequence
 
 class Element:
     def __init__(self, webi, element_type, attr, html_tag, html_input_type):
@@ -262,7 +263,7 @@ class DrawingBoard(Element):
 
         return value
 
-class Group:
+class Group(Sequence):
     def __init__(self, webi, sort):
         self.id = uuid.uuid4().hex
         self.webi = webi
@@ -322,6 +323,12 @@ class Group:
         ]
 
         return members
+    
+    def __getitem__(self, index):
+        return self.members[index]
+    
+    def __len__(self):
+        return len(self._members)
     
     @_async()
     async def _create(self):
