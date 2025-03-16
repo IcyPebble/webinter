@@ -40,6 +40,10 @@ Packer.prototype.pack = function (blocks, max_width, sort = true) {
     };
     let p = [];
 
+    if (blocks.length == 1) {
+        return { "blocks": blocks, "root": root };
+    }
+
     // Place remaining blocks
     for (let i = 0; i < blocks.length - 1; i++) {
         let bl = blocks[i];
@@ -167,12 +171,19 @@ Packer.prototype.place_blocks = function (blocks) {
 
 Packer.prototype.fit = function () {
     if (!this.container.children.length) { return 0 }
+    let elements = [];
+    for (child of this.container.children) {
+        if (window.getComputedStyle(child).display != "none") {
+            elements.push(child);
+        }
+    }
+    if (!elements.length) { return 0 }
 
     let container_style = window.getComputedStyle(this.container);
     let max_width = window.innerWidth * (
         parseFloat(container_style.getPropertyValue("--max-content-width")) / 100
     );
-    let blocks = this.elements_to_blocks(this.container.children);
+    let blocks = this.elements_to_blocks(elements);
     let arrangement = this.pack(blocks, max_width, this.container.hasAttribute("sort"));
 
     this.container.style.width = arrangement.root.w + "px";

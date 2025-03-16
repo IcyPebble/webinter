@@ -27,11 +27,23 @@ function base64ToBlob(base64, typestr) {
     return URL.createObjectURL(blob);
 }
 
-socket.on("add_element", (id, html, position, anchor_id) => {
+socket.on("create_element", (id, html) => {
     let node = htmlToNode(html);
-    node.classList.add("element");
+    node.classList.add("element", "unplaced");
     node.id = id + "-container";
+    document.getElementById("unplaced-content").appendChild(node);
+});
 
+socket.on("add_element", (id, position, anchor_id) => {
+    let node = document.getElementById(id + "-container");
+    node.classList.remove("unplaced");
+
+    onmodification();
+    if (node.parentElement.id != "unplaced-content") {
+        return;
+    }
+
+    node.remove();
     if (anchor_id && (position === -1 || position === 1)) {
         anchor_element = document.getElementById(anchor_id);
         if (!anchor_element.classList.contains("group")) {

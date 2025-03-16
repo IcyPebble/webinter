@@ -67,17 +67,23 @@ class Element:
         return value
     
     @_async()
-    async def add(self, position=0, anchor=None):
+    async def _create(self):
         # Create html and add to server
         html = HTMLBuilder.create_html_element(
             **self._html_builder_args, **self.attr
         )
-        anchor_id = anchor.id if anchor is not None else ""
         await self.webi.server._emit(
-            self.webi.name, "add_element", self.id, html,
-            position, anchor_id
+            self.webi.name, "create_element", self.id, html
         )
         self.webi.elements[self.id] = self
+
+    @_async()
+    async def add(self, position=0, anchor=None):
+        anchor_id = anchor.id if anchor is not None else ""
+        await self.webi.server._emit(
+            self.webi.name, "add_element", self.id,
+            position, anchor_id
+        )
             
         return self
     
@@ -171,10 +177,9 @@ class MediaElement(Element):
         self.format = format
     
     @Element._async()
-    async def add(self, position=0, anchor=None):
-        await super(self.__class__, self).add(position, anchor, _async=True)
+    async def _create(self):
+        await super(self.__class__, self)._create(_async=True)
         await self.change_src(self.src, self.format, _async=True)
-        return self
     
     @Element._async()
     async def change_src(self, src, format):
@@ -433,7 +438,8 @@ class WebI:
             return wrapper
         return decorator
 
-    def input(self, type, **attr):
+    @_async()
+    async def input(self, type, **attr):
         core = (DrawingBoard if type == "draw" else Element)(
                 webi = self,
                 element_type = f"input-{type}",
@@ -441,10 +447,13 @@ class WebI:
                 html_tag = ("drawing-board" if type == "draw" else "input"),
                 html_input_type = type
         )
+
+        await core._create(_async=True)
         
         return core
     
-    def image(self, src, format="PNG", **attr):
+    @_async()
+    async def image(self, src, format="PNG", **attr):
         core = MediaElement(
             webi = self,
             element_type = "image",
@@ -454,10 +463,13 @@ class WebI:
             src = src,
             format = format 
         )
+
+        await core._create(_async=True)
         
         return core
     
-    def audio(self, src, format="WAV", **attr):
+    @_async()
+    async def audio(self, src, format="WAV", **attr):
         core = MediaElement(
             webi = self,
             element_type = "audio",
@@ -470,10 +482,13 @@ class WebI:
 
         # Enable controls per default
         core.attr["controls"] = True
+
+        await core._create(_async=True)
         
         return core
     
-    def video(self, src, format="MP4", **attr):
+    @_async()
+    async def video(self, src, format="MP4", **attr):
         core = MediaElement(
             webi = self,
             element_type = "video",
@@ -487,9 +502,12 @@ class WebI:
         # Enable controls per default
         core.attr["controls"] = True
 
+        await core._create(_async=True)
+
         return core
 
-    def text(self, text, **attr):
+    @_async()
+    async def text(self, text, **attr):
         core = Element(
             webi = self,
             element_type = "text",
@@ -499,10 +517,13 @@ class WebI:
         )
 
         core.attr["text"] = text
+
+        await core._create(_async=True)
         
         return core
     
-    def title(self, text, size = 1, **attr):
+    @_async()
+    async def title(self, text, size = 1, **attr):
         assert 1 <= int(size) <= 6
 
         core = Element(
@@ -515,6 +536,8 @@ class WebI:
 
         core.attr["text"] = text
         core.attr["size"] = int(size)
+
+        await core._create(_async=True)
         
         return core
     
