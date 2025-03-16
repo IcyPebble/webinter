@@ -236,6 +236,43 @@ socket.on("remove_attributes", (id, names) => {
     onmodification();
 })
 
+var custom_styles = {};
+socket.on("update_style", (id, custom_style) => {
+    let element = document.getElementById(id);
+    let custom = document.getElementById("custom-style");
+    let sheet = custom.sheet;
+
+    if (Object.keys(custom_style).length == 0 && id in custom_styles) {
+        let idx = custom_styles[id]["idx"];
+        delete custom_styles[id];
+        Object.keys(custom_styles).forEach((k) => {
+            if (custom_styles[k]["idx"] > idx) {
+                --custom_styles[k]["idx"];
+            }
+        });
+        sheet.deleteRule(idx);
+        element.classList.remove("custom-style");
+        return;
+    }
+    if (!(id in custom_styles)) {
+        custom_styles[id] = { "idx": Object.keys(custom_styles).length, "style": {} };
+        sheet.insertRule(`[id='${id}'].custom-style{}`, custom_styles[id]["idx"]);
+        element.classList.add("custom-style");
+    }
+
+    let removed = Object.keys(custom_styles[id]["style"]).filter((k) => k in custom_style);
+    custom_styles[id]["style"] = custom_style;
+
+    let style = sheet.cssRules[custom_styles[id]["idx"]].style;
+    Object.keys(custom_style).forEach((k) => {
+        if (k in removed) {
+            style[k] = "";
+        } else {
+            style[k] = custom_style[k];
+        }
+    });
+})
+
 socket.on("change_visibility", (id, mode) => {
     let element = document.getElementById(id);
     switch (mode) {
