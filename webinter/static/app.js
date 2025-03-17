@@ -290,7 +290,7 @@ socket.on("update_style", (id, custom_style, rule) => {
 })
 
 socket.on("change_visibility", (id, mode) => {
-    let element = document.getElementById(id);
+    let element = document.getElementById(id + "-container");
     switch (mode) {
         case "show":
             element.style.display = "";
