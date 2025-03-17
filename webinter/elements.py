@@ -21,7 +21,7 @@ class Element:
             "type": html_input_type,
         }
         self._group = None
-        self.style = {}
+        self._style = {}
         self._value_response = asyncio.Event() # waits for a value response
     
     def _async(default=None):
@@ -159,15 +159,17 @@ class Element:
         await self.webi.server._emit(self.webi.name, "remove_attributes", self.id, attribute_names)
     
     @_async()
-    async def update_style(self, style):
-        self.style.update(style)
-        await self.webi.server._emit(self.webi.name, "update_style", self.id, self.style)
+    async def update_style(self, style, *, rule="<self>"):
+        if rule not in self._style:
+            self._style[rule] = {}
+        self._style[rule].update(style)
+        await self.webi.server._emit(self.webi.name, "update_style", self.id, self._style[rule], rule)
 
     @_async()
-    async def remove_style(self, style_names):
+    async def remove_style(self, style_names, *, rule="<self>"):
         for name in style_names:
-            self.style.pop(name)
-        await self.webi.server._emit(self.webi.name, "update_style", self.id, self.style)
+            self._style[rule].pop(name)
+        await self.webi.server._emit(self.webi.name, "update_style", self.id, self._style[rule], rule)
 
 
 class MediaElement(Element):

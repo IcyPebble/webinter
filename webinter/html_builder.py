@@ -4,9 +4,9 @@ class HTMLBuilder:
     def _simple_input(id, **attr):
         a = Airium()
 
-        with a.div():
+        with a.div(id=id+"-container"):
             label = attr.pop("label", None)
-            if label is not None: a.label(for_=id, _t=label)
+            if label is not None: a.label(for_=id, _t=label, id=id+"-label")
 
             a.input(id=id, **attr)
 
@@ -15,7 +15,7 @@ class HTMLBuilder:
     def _button(id, **attr):
         a = Airium()
 
-        with a.div():
+        with a.div(id=id+"-container"):
             if "label" in attr:
                 attr["value"] = attr["label"]
                 del attr["label"]
@@ -28,19 +28,19 @@ class HTMLBuilder:
         del attr["type"]
 
         a = Airium()
-        with a.div():
+        with a.div(id=id+"-container"):
             options = attr.pop("options")
             selected = attr.pop("selected", [])
             label = attr.pop("label", None)
 
-            if label is not None: a.label(for_=id, _t=label)
+            if label is not None: a.label(for_=id, _t=label, id=id+"-label")
 
             with a.select(id=id, **attr):
                 for i, option in enumerate(options):
                     option_attr = {"value": option[1], "_t": option[0]}
                     if i in selected:
                         option_attr["selected"] = True
-                    a.option(**option_attr)
+                    a.option(**option_attr, id=id+"-option-"+option[0])
 
         return str(a)
     
@@ -48,9 +48,9 @@ class HTMLBuilder:
         del attr["type"]
 
         a = Airium()
-        with a.div():
+        with a.div(id=id+"-container"):
             label = attr.pop("label", None)
-            if label is not None: a.label(for_=id, _t=label)
+            if label is not None: a.label(for_=id, _t=label, id=id+"-label")
 
             a.textarea(id=id, **attr)
 
@@ -60,9 +60,9 @@ class HTMLBuilder:
         del attr["type"]
 
         a = Airium()
-        with a.div():
+        with a.div(id=id+"-container"):
             label = attr.pop("label", None)
-            if label is not None: a.label(for_=id, _t=label)
+            if label is not None: a.label(for_=id, _t=label, id=id+"-label")
 
             getattr(a, "drawing-board")(id=id, **attr)
         
@@ -70,19 +70,19 @@ class HTMLBuilder:
 
     def _img(id, **attr):
             a = Airium()
-            with a.div():
+            with a.div(id=id+"-container"):
                 a.img(id=id, **attr)
             return str(a)
             
     def _audio(id, **attr):
             a = Airium()
-            with a.div():
+            with a.div(id=id+"-container"):
                 a.audio(id=id, **attr)
             return str(a)
 
     def _video(id, **attr):
             a = Airium()
-            with a.div():
+            with a.div(id=id+"-container"):
                 a.video(id=id, **attr)
             return str(a)
 
@@ -90,7 +90,7 @@ class HTMLBuilder:
             a = Airium()
             text = attr.pop("text", "")
 
-            with a.div():
+            with a.div(id=id+"-container"):
                 a.p(id=id, _t=text)
             return str(a)
             
@@ -99,7 +99,7 @@ class HTMLBuilder:
             text = attr.pop("text", "")
             size = attr.pop("size", 1)
 
-            with a.div():
+            with a.div(id=id+"-container"):
                 getattr(a, f"h{size}")(id=id, _t=text)
             return str(a)
 

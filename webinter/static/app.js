@@ -30,7 +30,6 @@ function base64ToBlob(base64, typestr) {
 socket.on("create_element", (id, html) => {
     let node = htmlToNode(html);
     node.classList.add("element", "unplaced");
-    node.id = id + "-container";
     document.getElementById("unplaced-content").appendChild(node);
 });
 
@@ -177,6 +176,7 @@ socket.on("update_attributes", (id, attributes) => {
                     if (!label) {
                         label = document.createElement("label");
                         label.htmlFor = id;
+                        label.id = id + "-label";
                         container.insertBefore(label, container.firstChild);
                     }
                     label.innerText = attributes["label"];
@@ -187,6 +187,7 @@ socket.on("update_attributes", (id, attributes) => {
                 let options = [];
                 attributes["options"].forEach((o) => {
                     let option = document.createElement("option");
+                    option.id = id + "-option-" + o[0];
                     option.text = o[0];
                     option.value = o[1];
                     options.push(option);
@@ -249,14 +250,17 @@ socket.on("remove_attributes", (id, names) => {
 })
 
 var custom_styles = {};
-socket.on("update_style", (id, custom_style) => {
+socket.on("update_style", (id, custom_style, rule) => {
     let element = document.getElementById(id);
     let custom = document.getElementById("custom-style");
     let sheet = custom.sheet;
 
-    if (Object.keys(custom_style).length == 0 && id in custom_styles) {
-        let idx = custom_styles[id]["idx"];
-        delete custom_styles[id];
+    let css_rule = rule.replaceAll("<self>", `[id='${id}'].custom-style`)
+    console.log(css_rule);
+
+    if (Object.keys(custom_style).length == 0 && css_rule in custom_styles) {
+        let idx = custom_styles[css_rule]["idx"];
+        delete custom_styles[css_rule];
         Object.keys(custom_styles).forEach((k) => {
             if (custom_styles[k]["idx"] > idx) {
                 --custom_styles[k]["idx"];
@@ -266,16 +270,16 @@ socket.on("update_style", (id, custom_style) => {
         element.classList.remove("custom-style");
         return;
     }
-    if (!(id in custom_styles)) {
-        custom_styles[id] = { "idx": Object.keys(custom_styles).length, "style": {} };
-        sheet.insertRule(`[id='${id}'].custom-style{}`, custom_styles[id]["idx"]);
+    if (!(css_rule in custom_styles)) {
+        custom_styles[css_rule] = { "idx": Object.keys(custom_styles).length, "style": {} };
+        sheet.insertRule(css_rule + "{}", custom_styles[css_rule]["idx"]);
         element.classList.add("custom-style");
     }
 
-    let removed = Object.keys(custom_styles[id]["style"]).filter((k) => k in custom_style);
-    custom_styles[id]["style"] = custom_style;
+    let removed = Object.keys(custom_styles[css_rule]["style"]).filter((k) => k in custom_style);
+    custom_styles[css_rule]["style"] = custom_style;
 
-    let style = sheet.cssRules[custom_styles[id]["idx"]].style;
+    let style = sheet.cssRules[custom_styles[css_rule]["idx"]].style;
     Object.keys(custom_style).forEach((k) => {
         if (k in removed) {
             style[k] = "";
