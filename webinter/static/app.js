@@ -27,11 +27,22 @@ function base64ToBlob(base64, typestr) {
     return URL.createObjectURL(blob);
 }
 
-socket.on("add_element", (id, html, position, anchor_id) => {
+socket.on("create_element", (id, html) => {
     let node = htmlToNode(html);
-    node.classList.add("element");
-    node.id = id + "-container";
+    node.classList.add("element", "unplaced");
+    document.getElementById("unplaced-content").appendChild(node);
+});
 
+socket.on("add_element", (id, position, anchor_id) => {
+    let node = document.getElementById(id + "-container");
+    node.classList.remove("unplaced");
+
+    onmodification();
+    if (node.parentElement.id != "unplaced-content") {
+        return;
+    }
+
+    node.remove();
     if (anchor_id && (position === -1 || position === 1)) {
         anchor_element = document.getElementById(anchor_id);
         if (!anchor_element.classList.contains("group")) {
@@ -165,6 +176,7 @@ socket.on("update_attributes", (id, attributes) => {
                     if (!label) {
                         label = document.createElement("label");
                         label.htmlFor = id;
+                        label.id = id + "-label";
                         container.insertBefore(label, container.firstChild);
                     }
                     label.innerText = attributes["label"];
@@ -175,6 +187,7 @@ socket.on("update_attributes", (id, attributes) => {
                 let options = [];
                 attributes["options"].forEach((o) => {
                     let option = document.createElement("option");
+                    option.id = id + "-option-" + o[0];
                     option.text = o[0];
                     option.value = o[1];
                     options.push(option);
@@ -236,8 +249,52 @@ socket.on("remove_attributes", (id, names) => {
     onmodification();
 })
 
-socket.on("change_visibility", (id, mode) => {
+var custom_styles = {};
+socket.on("update_style", (id, custom_style, rule) => {
     let element = document.getElementById(id);
+    let custom = document.getElementById("custom-style");
+    let sheet = custom.sheet;
+
+    let css_rule = rule.replaceAll("<self>", `[id='${id}'].custom-style`);
+
+    if (Object.keys(custom_style).length == 0 && css_rule in custom_styles) {
+        let idx = custom_styles[css_rule]["idx"];
+        delete custom_styles[css_rule];
+        Object.keys(custom_styles).forEach((k) => {
+            if (custom_styles[k]["idx"] > idx) {
+                --custom_styles[k]["idx"];
+            }
+        });
+        sheet.deleteRule(idx);
+        for (v of Object.values(custom_styles)) {
+            if (v["id"] == id) {
+                return;
+            }
+        }
+        element.classList.remove("custom-style");
+        return;
+    }
+    if (!(css_rule in custom_styles)) {
+        custom_styles[css_rule] = { "idx": Object.keys(custom_styles).length, "style": {}, "id": id };
+        sheet.insertRule(css_rule + "{}", custom_styles[css_rule]["idx"]);
+        element.classList.add("custom-style");
+    }
+
+    let removed = Object.keys(custom_styles[css_rule]["style"]).filter((k) => k in custom_style);
+    custom_styles[css_rule]["style"] = custom_style;
+
+    let style = sheet.cssRules[custom_styles[css_rule]["idx"]].style;
+    Object.keys(custom_style).forEach((k) => {
+        if (k in removed) {
+            style[k] = "";
+        } else {
+            style[k] = custom_style[k];
+        }
+    });
+})
+
+socket.on("change_visibility", (id, mode) => {
+    let element = document.getElementById(id + "-container");
     switch (mode) {
         case "show":
             element.style.display = "";
