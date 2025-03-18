@@ -255,8 +255,7 @@ socket.on("update_style", (id, custom_style, rule) => {
     let custom = document.getElementById("custom-style");
     let sheet = custom.sheet;
 
-    let css_rule = rule.replaceAll("<self>", `[id='${id}'].custom-style`)
-    console.log(css_rule);
+    let css_rule = rule.replaceAll("<self>", `[id='${id}'].custom-style`);
 
     if (Object.keys(custom_style).length == 0 && css_rule in custom_styles) {
         let idx = custom_styles[css_rule]["idx"];
@@ -267,11 +266,16 @@ socket.on("update_style", (id, custom_style, rule) => {
             }
         });
         sheet.deleteRule(idx);
+        for (v of Object.values(custom_styles)) {
+            if (v["id"] == id) {
+                return;
+            }
+        }
         element.classList.remove("custom-style");
         return;
     }
     if (!(css_rule in custom_styles)) {
-        custom_styles[css_rule] = { "idx": Object.keys(custom_styles).length, "style": {} };
+        custom_styles[css_rule] = { "idx": Object.keys(custom_styles).length, "style": {}, "id": id };
         sheet.insertRule(css_rule + "{}", custom_styles[css_rule]["idx"]);
         element.classList.add("custom-style");
     }
