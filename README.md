@@ -209,13 +209,10 @@ The "control" attribute is present by default for audio and video elements. To d
 To change the source of the element, you may call ```change_src(new_source, file_format_of_new_source)```.
 
 All other **attributes** apply and behave in the same way **as those of the respective HTML element**.
-<details>
-<summary>
-<div style="display:inline-block">
 
 ### Styling the elements
-</div>
-</summary>
+<details>
+<summary></summary>
 
 It is possible to customize an element with CSS:
 ```python
@@ -227,10 +224,7 @@ element.remove_style(style_names: list, *, rule: str = "<self>")
 ```
 with a list of property names (**style_names**) and the same rule.
 
-<blockquote style="color: #d0342c; border-color: #d0342c">
-
-&#9888; The use of custom styles should be approached with caution, as it could break some functions and existing styles!
-</blockquote>
+> &#9888; The use of custom styles should be approached with caution, as it could break some functions and existing styles!
 
 The previously mentioned parameter **rule** serves as a CSS selector, though "\<self\>" is replaced with the element selector. The specified properties also only apply to the given rule.
 This allows more precise styling, e.g. of a label:
