@@ -1,7 +1,7 @@
 # Webinter
 The aim of "WebInter" is to provide (existing) Python code with simple and good-looking *web* *inter*faces. In this sense, it is not intended to enable the creation of finished apps or games, but merely to make code more interactive and illustrate results based on user input.
 
-<span style="color:grey; font-size: x-small"><i>This is just a "small" project and thus will be maintained/updated irregularly</i></span>
+<span><i><small>This is just a "small" project and thus will be maintained/updated irregularly</small></i></span>
 
 ### Table of contents
 1. [Installation](#installation)
