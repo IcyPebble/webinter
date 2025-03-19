@@ -1,7 +1,7 @@
 # Webinter
-The aim of “WebInter” is to provide (existing) Python code with simple and good-looking *web* *inter*faces. In this sense, it is not intended to enable the creation of finished apps or games, but merely to make code more interactive and illustrate results based on user input.
+The aim of "WebInter" is to provide (existing) Python code with simple and good-looking *web* *inter*faces. In this sense, it is not intended to enable the creation of finished apps or games, but merely to make code more interactive and illustrate results based on user input.
 
-<span style="color:grey; font-size: x-small"><i>This is just a “small” project and thus will be maintained/updated irregularly</i></span>
+<span style="color:grey; font-size: x-small"><i>This is just a "small" project and thus will be maintained/updated irregularly</i></span>
 
 ### Table of contents
 1. [Installation](#installation)
@@ -15,7 +15,7 @@ The aim of “WebInter” is to provide (existing) Python code with simple and g
 9. [API](#api)
 
 # Installation
-Currently, in order to use WebInter, you have to copy the folder “webinter” into the same folder where your project file is located.<br>
+Currently, in order to use WebInter, you have to copy the folder "webinter" into the same folder where your project file is located.<br>
 You should also install all dependencies as follows:
 ```
 pip install -r requirements.txt 
@@ -81,44 +81,28 @@ async def onclick(el, v): # async
     # -> eq. to: await txt.add(_async=True)
 ```
 
-As you can see with ```btn.add()``` and ```txt.add()```, you do not always have to specify the _async parameter. However, you should not forget to await the functions if they are called in an asynchronous context. If it is necessary to decide for yourself whether the function is asynchronous or not, a list of all functions that accept the _async parameter can be found below:
+As you can see with ```btn.add()``` and ```txt.add()```, you do not always have to specify the \_async parameter. However, you should not forget to await the functions if they are called in an asynchronous context. If it is necessary to decide for yourself whether the function is asynchronous or not, you should note that not all functions support the \_async parameter. An overview of these functions can be found here:
 <details>
-<summary>Functions with the _async parameter</summary>
+<summary>Functions <b>without</b> the _async parameter</summary>
 
-- WebI.group                   
-- WebI.order                   
-- WebI.alert                   
-- WebI.download                
-- WebI.shutdown                
-- Element.get                  
-- Element.add                  
-- Element.remove               
-- Element.on                   
-- Element.remove_event_handler 
-- Element.change_visibility    
-- Element.update_attr          
-- Element.remove_attr          
-- MediaElement.change_src      
-- DrawingBoard.toggle_eraser   
-- DrawingBoard.clear           
-- DrawingBoard.undo            
-- Group.add_members            
-- Group.remove_members         
-- Group.disband                
-- Group.order                  
-- Group.toggle_sorting         
+- WebI.show
+- WebI.onload
+- WebI.namespace
+- Group.get_members
 </details>
 
 ## How to use elements
 After creating the core of our application (```webi = WebI()```), we can start adding content.
 There are multiple types of elements: [inputs](#inputs), [text](#text), [images, audio and videos](#images-audio-and-video)
 
+To create an element, the corresponding constructor function must be called **or awaited**, depending on the context.<br>
 However, these are not yet displayed after creation. To do this, the ```add()``` function must first be called. It returns the element itself, so it can be called in the same line. In order to remove the element again afterwards, ```remove()``` may be called.
 Each element can be found as an entry ({id(element): element}) in the ```webi.elements``` dictionary
 
 Yet, this function deletes the element and its event handlers completely; the ```change_visibility(mode="toggle"|"show"|"hide")``` function is therefore often better suited for simple hiding/display.<br>
 
 If you want to change or remove certain attributes of an element you can use ```update_attr()``` and ```remove_attr()``` repectively, with a dictionary of attributes or a list of attribute names as their first argument. "type", "src" and "style" can't be changed or removed.<br>
+For advanced customization, refer to the section ["Styling the elements"](#styling-the-elements).
 
 At last, the current value of an input element can be accessed by either calling them directly or calling the ```get()``` function.
 
@@ -218,13 +202,53 @@ audio_element = webi.audio(src: (str | BytesIO | ndarray | None), format: str = 
 video_element = webi.video(src: (str | BytesIO | None), format: str = "MP4", **attr)
 ```
 The **source** must be a valid file path or a BytesIO buffer, whereby a numpy array is also valid for images and audio. You may pass None to set no source.
-The **format** must also correspond to the file format of the specified file. However, the format of an audio specified as a numpy array must be “WAV” (wave file).
+The **format** must also correspond to the file format of the specified file. However, the format of an audio specified as a numpy array must be "WAV" (wave file).
 
-The “control” attribute is present by default for audio and video elements. To disable these, ```remove_attributes(["controls"])``` should be called. Note that an audio element is not visible without the control attribute.
+The "control" attribute is present by default for audio and video elements. To disable these, ```remove_attributes(["controls"])``` should be called. Note that an audio element is not visible without the control attribute.
 
 To change the source of the element, you may call ```change_src(new_source, file_format_of_new_source)```.
 
 All other **attributes** apply and behave in the same way **as those of the respective HTML element**.
+<details>
+<summary>
+<div style="display:inline-block">
+
+### Styling the elements
+</div>
+</summary>
+
+It is possible to customize an element with CSS:
+```python
+element.update_style(style: dict, *, rule: str = "<self>")
+```
+Here **style** is a dictionary with the CSS properties to be changed or added. To remove properties, you can call
+```python
+element.remove_style(style_names: list, *, rule: str = "<self>")
+```
+with a list of property names (**style_names**) and the same rule.
+
+<blockquote style="color: #d0342c; border-color: #d0342c">
+
+&#9888; The use of custom styles should be approached with caution, as it could break some functions and existing styles!
+</blockquote>
+
+The previously mentioned parameter **rule** serves as a CSS selector, though "\<self\>" is replaced with the element selector. The specified properties also only apply to the given rule.
+This allows more precise styling, e.g. of a label:
+```python
+rule = "div:has(<self>) > label"
+```
+the options of the select element:
+```python
+rule = "<self> > option"
+```
+or the element container:
+```python
+rule = "div:has(<self>)"
+```
+It might be helpful to inspect the source code of the website.
+
+All user-defined styles can be accessed via the **_style** property (```element._style[rule] = style```).
+</details>
 
 ## Handling events
 To handle events that are triggered on an element, you can use the function ```on```:<br>
@@ -262,9 +286,9 @@ async def func():
 ```
 <br>
 
-The “handler” function, as in the examples above, **must** always be async and take two arguments.<br>
+The "handler" function, as in the examples above, **must** always be async and take two arguments.<br>
 The first argument is the element on which the event was triggered.<br>
-The (new) value of the element or None ( = the same value that element.get() returns) is given to the function as the second argument. For the “click” event of images, a coordinate is returned [x (left), y (top)].
+The (new) value of the element or None ( = the same value that element.get() returns) is given to the function as the second argument. For the "click" event of images, a coordinate is returned [x (left), y (top)].
 
 To remove a handler function, the ```remove_event_handler``` function can be called:
 ```python
@@ -288,9 +312,10 @@ Groups do not have an add method; they are created directly with the initial **m
 Elements within a group are placed to fill as much space as possible. For this purpose, they are sorted by default in descending order according to their width. This can be prevented with the **sort** argument set to False if necessary. It is also possible to change this after creation with ```toggle_sorting(sort: bool)```. Whether a group is sorted is reflected in the **.sort** property.
 > &#9432; .order() will have no visual effect as long as sort is True.
 
-To append further members to the group after creation, the ```add_members(members: Iterable[Element | Group])``` function can be used. With ```remove_members(members: Iterable[Element | Group])```, given members are removed from the group and placed in the parent container element behind the group. You can access a list of all current members via the **.members** property.
+To append further members to the group after creation, the ```add_members(members: Iterable[Element | Group])``` function can be used. With ```remove_members(members: Iterable[Element | Group])```, given members are removed from the group and placed in the parent container element behind the group.<br>
+You can access a list of all current members via the **.members** property. For extended access, you can use ```get_members(_except: Iterable[Element | Group | str] = [], resolve_groups: bool = False)```, where *_except* is a list of members or types to be excluded, and *resolve_groups* specifies whether groups in the members should be resolved or not (also returns their members).<br> Another way to access the members is to simply index the group or iterate over the group.
 
-Each group, just like each element, also has the **.group** and the **.webi** property.
+Each group, just like each element, also has the **.group**, **.type** and the **.webi** property.
 You can access every group as an entry ({id(group): group}) of the ```webi.group``` dictionary.
 
 If the group is dissolved using the ```disband()``` function, the group is deleted and all members are moved to the former position of the group in their order.
@@ -336,7 +361,7 @@ btn = webi.input("button", label="Click me!").add()
 async def change_text(*_):
    await txt.update_attr({"text": "bar"})
 ```
-After the button has been clicked, the text of the text element changes to “bar”. However, when the page is reloaded, the text changes back to “foo”.
+After the button has been clicked, the text of the text element changes to "bar". However, when the page is reloaded, the text changes back to "foo".
 
 If you want to call a function every time the page is loaded, you can register it as an onload handler:
 ```python
@@ -347,7 +372,7 @@ async def handler():
 This function must be async and registering a different onload handler will overwrite the existing one.
 
 ### Namespaces
-Although it is not possible for several clients to call up the same page, it is possible to create “subpages” or namespaces, where you can add further elements apart from the main page:
+Although it is not possible for several clients to call up the same page, it is possible to create "subpages" or namespaces, where you can add further elements apart from the main page:
 ```python
 namespace = webi.namespace(name: str)
 ```
@@ -496,6 +521,8 @@ Element(webi: WebI, element_type: str, attr: dict, html_tag: str, html_input_typ
 
  > **webi** (WebI): The WebI instance it was created from
 
+ > **id** (str): The id of the element.
+
  > **type** (str): The type/name of the element. Not to be confused with the input element's type
 
  > **attr** (dict): A collection of all attributes
@@ -524,6 +551,11 @@ Element(webi: WebI, element_type: str, attr: dict, html_tag: str, html_input_typ
     Can add new attributes
 
  > **remove_attr(attribute_names, _async)**: Removes given attributes from the element
+
+ > **update_style(style, *, rule, _async)**: Changes the values of the specified CSS properties.<br>
+    Can add new CSS properties
+
+ > **remove_attr(style_names, *, rule, _async)**: Removes given CSS properties from the element
 </details>
 
 ### MediaElement(Element)
@@ -613,6 +645,10 @@ Group(webi: WebI, sort)
  > **group** (Group | None): The group to which the element belongs
 
  > **sort** (Boolean): Flag if this group's elements should be sorted
+
+ > **id** (str): The id of the group
+
+ > **type** (str): Equals "group"
 </details>
 
 <details>
@@ -621,6 +657,8 @@ Group(webi: WebI, sort)
  > **add_members(members, _async)**: Add given members to this group
 
  > **remove_members(members, _async)**: Remove given members from this group
+
+ > **get_members(_except, resolve_groups)**: Returns a list of all children elements
 
  > **disband(_async)**: Removes this group. Moves all members to the parent element
 
