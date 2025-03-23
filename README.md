@@ -343,7 +343,7 @@ while a position of 1 places the element **after** the anchor element.<br>
 
 ## More on the WebI instance
 ### Behavior on page refresh
-When you visit the page for the first time, the server saves the current status of the application. If you then load the page again, the saved state is restored. This also means that the attributes of all elements, groups etc. are reset. However, this does not apply to the webi.handlers dictionary.<br>
+When you visit the page for the first time, the server saves the current status of the application. If you then load the page again, the saved state is restored. This also means that the attributes of all elements, groups etc. are reset. However, this does not apply to the webi.namespaces dictionary.<br>
 Take the following code as an example:
 ```python
 webi = WebI()
